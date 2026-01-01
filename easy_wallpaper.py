@@ -249,6 +249,79 @@ class WaifuImProvider(ImageProvider):
         return ["waifu"]
 
 
+class CatgirlProvider(ImageProvider):
+    """Image provider for nekos.moe API (catgirl images)."""
+    
+    def __init__(self):
+        self.api_url = "https://nekos.moe/api/v1/random/image"
+    
+    def get_name(self) -> str:
+        return "nekos.moe"
+    
+    def get_description(self) -> str:
+        return "Catgirl images (no key required, unlimited)"
+    
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        """Download image from nekos.moe."""
+        # Convert NSFW setting based on category (category acts as nsfw mode)
+        nsfw_param = self._map_category_to_nsfw(category)
+        
+        params = {}
+        if nsfw_param is not None:
+            params["nsfw"] = nsfw_param
+        
+        try:
+            print(f"⏳ Downloading from nekos.moe ({category})...")
+            response = requests.get(self.api_url, params=params, timeout=15)
+            response.raise_for_status()
+            
+            data = response.json()
+            if not data.get("images"):
+                raise RuntimeError(f"❌ No catgirl images found for '{category}' on nekos.moe.")
+            
+            image_id = data["images"][0]["id"]
+            image_url = f"https://nekos.moe/image/{image_id}"
+            
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+            
+            print("✅ Download successful!")
+            return image_response.content
+        
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"❌ Failed to download from nekos.moe: {e}")
+        except KeyError:
+            raise RuntimeError("❌ Unexpected nekos.moe API response format.")
+    
+    @staticmethod
+    def _map_category_to_nsfw(category: str) -> str | None:
+        """Map user category to nekos.moe NSFW setting."""
+        # Map category to NSFW boolean or None for default
+        category_lower = category.lower()
+        
+        nsfw_map = {
+            "safe": "false",
+            "safe sfw": "false",
+            "sfw": "false",
+            "nsfw": "true",
+            "lewd": "true",
+            "mixed": None,  # No filter = all results
+            "all": None,
+        }
+        
+        # Check direct matches
+        if category_lower in nsfw_map:
+            return nsfw_map[category_lower]
+        
+        # Check partial matches
+        for key, value in nsfw_map.items():
+            if key in category_lower:
+                return value
+        
+        # Default to safe content
+        return "false"
+
+
 # ============================================================================
 # Provider Registry
 # ============================================================================
@@ -257,6 +330,7 @@ PROVIDERS = {
     "1": PexelsProvider,
     "2": PixabayProvider,
     "3": WaifuImProvider,
+    "4": CatgirlProvider,
 }
 
 
@@ -299,7 +373,7 @@ def get_provider() -> ImageProvider:
         print(f"  {key}. {provider.get_name():15} - {provider.get_description()}")
     
     while True:
-        choice = input("\nSelect provider (1-3): ").strip()
+        choice = input("\nSelect provider (1-4): ").strip()
         
         if choice in PROVIDERS:
             return PROVIDERS[choice]()
@@ -336,6 +410,44 @@ def get_waifu_category() -> str:
                 if custom:
                     return custom
                 print("❌ Please enter a valid tag.")
+            else:
+                print("❌ Please select a valid option.")
+        except ValueError:
+            print("❌ Please enter a number.")
+
+
+def get_catgirl_category() -> str:
+    """
+    Prompt the user to select a catgirl content filter.
+    
+    Returns:
+        str: The selected category (acts as NSFW filter).
+    """
+    catgirl_categories = [
+        "safe sfw", "mixed all"
+    ]
+    
+    print("\n😻 What type of catgirl images?")
+    for i, cat in enumerate(catgirl_categories, 1):
+        labels = {
+            "safe sfw": "Safe (SFW only)",
+            "mixed all": "Mixed (all content)",
+        }
+        print(f"  {i}. {labels.get(cat, cat)}")
+    print(f"  {len(catgirl_categories) + 1}. Custom filter")
+    
+    while True:
+        try:
+            choice = input(f"\nSelect content filter (1-{len(catgirl_categories) + 1}): ").strip()
+            choice_idx = int(choice) - 1
+            
+            if choice_idx < len(catgirl_categories):
+                return catgirl_categories[choice_idx]
+            elif choice_idx == len(catgirl_categories):
+                custom = input("Enter custom filter (true/false/none): ").strip()
+                if custom:
+                    return custom
+                print("❌ Please enter a valid filter.")
             else:
                 print("❌ Please select a valid option.")
         except ValueError:
@@ -397,6 +509,96 @@ def get_resolution() -> str:
             print("❌ Invalid resolution format. Use WIDTHxHEIGHT.")
         else:
             print("❌ Please select a valid option.")
+
+
+def get_os_choice() -> tuple:
+    """
+    Ask user their operating system and show wallpaper setup instructions.
+    
+    Returns:
+        tuple: (os_name, instructions_text)
+    """
+    os_options = {
+        "1": ("Windows", """
+╔════════════════════════════════════════════════════════════╗
+║  🪟 Windows Wallpaper Setup                               ║
+╚════════════════════════════════════════════════════════════╝
+When you download a wallpaper, it will be AUTOMATICALLY set!
+
+✅ The wallpaper will be saved and applied to your desktop
+   in one seamless action.
+✅ No additional steps needed - it just works!
+
+📁 File Location: Current working directory as wallpaper.jpg
+"""),
+        "2": ("macOS", """
+╔════════════════════════════════════════════════════════════╗
+║  🍎 macOS Wallpaper Setup                                 ║
+╚════════════════════════════════════════════════════════════╝
+When you download a wallpaper, it will be AUTOMATICALLY set!
+
+✅ The wallpaper will be applied via AppleScript
+✅ Your desktop background will update instantly
+✅ No additional steps needed - it just works!
+
+📁 File Location: Current working directory as wallpaper.jpg
+
+Note: You may see a security prompt to allow AppleScript.
+Click "Allow" to proceed.
+"""),
+        "3": ("Linux (GNOME)", """
+╔════════════════════════════════════════════════════════════╗
+║  🐧 Linux (GNOME) Wallpaper Setup                         ║
+╚════════════════════════════════════════════════════════════╝
+When you download a wallpaper, it will be AUTOMATICALLY set!
+
+✅ Uses gsettings to update your GNOME desktop background
+✅ Works seamlessly on Ubuntu, Fedora, Debian GNOME editions
+✅ No additional steps needed - it just works!
+
+📁 File Location: Current working directory as wallpaper.jpg
+
+Fallback options if GNOME isn't detected:
+  • feh: sudo apt install feh
+  • nitrogen: sudo apt install nitrogen
+"""),
+        "4": ("Linux (Other)", """
+╔════════════════════════════════════════════════════════════╗
+║  🐧 Linux (feh/nitrogen) Wallpaper Setup                  ║
+╚════════════════════════════════════════════════════════════╝
+When you download a wallpaper, we'll attempt to set it!
+
+⚠️  You may need to install a wallpaper setter first.
+
+Install one of these:
+  💻 feh (lightweight):
+     sudo apt install feh          # Debian/Ubuntu
+     sudo pacman -S feh             # Arch
+  
+  💻 nitrogen (feature-rich):
+     sudo apt install nitrogen      # Debian/Ubuntu
+     sudo pacman -S nitrogen        # Arch
+
+After installation, just run this tool again and your
+wallpaper will be set automatically!
+
+📁 File Location: Current working directory as wallpaper.jpg
+"""),
+    }
+    
+    print("\n🖥️  What's your operating system?")
+    for key, (name, _) in os_options.items():
+        print(f"  {key}. {name}")
+    
+    while True:
+        choice = input("\nSelect OS (1-4): ").strip()
+        
+        if choice in os_options:
+            os_name, instructions = os_options[choice]
+            print(instructions)
+            return (os_name, instructions)
+        else:
+            print("❌ Please select a valid option (1-4).")
 
 
 def get_mood() -> str:
@@ -604,12 +806,17 @@ def main() -> None:
         print("🖼️  Welcome to easy-wallpaper!")
         print("=" * 60)
         
+        # Ask about operating system and show instructions
+        os_name, os_instructions = get_os_choice()
+        
         # Get user preferences
         provider = get_provider()
         
         # Get category based on provider type
         if isinstance(provider, WaifuImProvider):
             category = get_waifu_category()
+        elif isinstance(provider, CatgirlProvider):
+            category = get_catgirl_category()
         else:
             category = get_category()
         

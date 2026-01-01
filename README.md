@@ -1,185 +1,252 @@
-# easy-wallpaper 🖼️
+# 🖼️ Easy Wallpaper
 
-A simple, cross-platform Python CLI tool to download and set desktop wallpapers from multiple image sources.
+A modular Python application that downloads beautiful wallpapers from multiple sources and automatically sets them on your desktop.
 
-## Features
+## ✨ Features
 
-- **Multi-source support** - Download from Pexels, Pixabay, or add your own
-- **Interactive CLI** - Easy-to-use prompts for wallpaper preferences
-- **Category-based search** - Choose from predefined categories (nature, space, cyberpunk, etc.) or enter custom ones
-- **Resolution selection** - Pick from common resolutions (1920x1080, 2560x1440, 4K) or set custom
-- **Mood filtering** - Optional mood filters (dark, light, vibrant, etc.)
-- **Cross-platform support** - Works on Windows, macOS, and Linux (GNOME/feh/nitrogen)
-- **Error handling** - Graceful error messages and helpful guidance
+- **Multiple Image Providers**
+  - 📸 **Pexels** - High-quality photos (200 requests/hour, no API key required)
+  - 🎨 **Pixabay** - Diverse images and illustrations (100 requests/hour, API key required)
+  - 👩 **waifu.im** - Anime waifu images (unlimited, no API key required)
+  - 🐱 **nekos.moe** - Catgirl images (unlimited, no API key required)
 
-## Supported Image Providers
+- **Cross-Platform Support**
+  - ✅ Windows (using WinAPI)
+  - ✅ macOS (using AppleScript/osascript)
+  - ✅ Linux (using dconf, feh, pcmanfm-desktop, or nitrogen)
 
-| Provider | API Key Required | Rate Limit | Notes |
-|----------|------------------|------------|-------|
-| **Pexels** | ❌ No | 200 req/hr | Photography, landscapes, real-world images |
-| **Pixabay** | ✅ Yes | 100 req/hr | Diverse photography and illustrations |
-| **waifu.im** | ❌ No | Unlimited | Anime, waifu, and manga-style artwork |
+- **Customizable Options**
+  - Category selection for each provider
+  - Mood/style filters (where available)
+  - Resolution preference
+  - API key support for premium providers
 
-Adding new providers is easy - see [Contributing](#contributing).
+## 📋 Project Structure
 
-## Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/NimuthuGanegoda/AutoWallpaper.git
-   cd AutoWallpaper
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **(Optional) Get API keys for additional providers:**
-
-   **Pixabay (optional):**
-   - Go to [Pixabay API](https://pixabay.com/api/)
-   - Sign up and copy your API key
-   - Set it: `export PIXABAY_API_KEY='your-api-key'`
-
-   **Pexels (optional):**
-   - Go to [Pexels API](https://www.pexels.com/api/)
-   - Sign up and copy your API key
-   - Set it: `export PEXELS_API_KEY='your-api-key'`
-
-## Usage
-
-Run the script:
-```bash
-python easy_wallpaper.py
+```
+AutoWallpaper/
+├── main.py              # Entry point
+├── providers.py         # Image provider implementations
+├── config.py            # Configuration and constants
+├── ui.py                # User interface and prompts
+├── wallpaper.py         # Wallpaper setting functionality
+├── requirements.txt     # Python dependencies
+└── README.md            # This file
 ```
 
-The tool will guide you through:
-1. **Selecting an image provider** (Pexels, Pixabay, etc.)
-2. **Selecting a wallpaper category** (nature, space, architecture, etc.)
-3. **Choosing a resolution** (1920x1080, 2560x1440, 4K, or custom)
-4. **Optionally selecting a mood** (dark, light, vibrant, etc.)
+### Module Descriptions
 
-The wallpaper will be downloaded and automatically set as your desktop background.
+**`main.py`** - Main entry point that orchestrates the workflow:
+- Gets user inputs for provider, category, mood, and resolution
+- Coordinates image download, saving, and wallpaper setting
+
+**`providers.py`** - Image provider implementations:
+- `ImageProvider` (ABC) - Base class for all providers
+- `PexelsProvider` - Pexels photo provider
+- `PixabayProvider` - Pixabay illustration provider
+- `WaifuImProvider` - waifu.im anime provider
+- `CatgirlProvider` - nekos.moe catgirl provider
+
+**`config.py`** - Configuration and constants:
+
+## 💻 Usage
+
+### Basic Usage
+
+Run the application:
+```bash
+python main.py
+```
+
+Or make it executable:
+```bash
+chmod +x main.py
+./main.py
+```
+
+### Interactive Menu
+
+The application will guide you through:
+1. **Select Image Provider** - Choose between Pexels, Pixabay, waifu.im, or nekos.moe
+2. **Select Category** - Choose from available categories for that provider
+3. **Select Mood** (optional) - Filter by mood/style if available
+4. **Select Resolution** - Choose your desired wallpaper resolution
+5. **Download & Set** - The app downloads and sets the wallpaper automatically
 
 ### Example Session
 
 ```
-============================================================
-🖼️  Welcome to easy-wallpaper!
-============================================================
+🖼️  WELCOME TO EASY WALLPAPER
 
-📷 Available image providers:
-  1. Pexels          - High-quality images (no key required, 200 req/hour)
-  2. Pixabay         - Diverse images (requires API key, 100 req/hour)
-  3. waifu.im        - Anime waifu images (no key required, unlimited)
+==================================================
+📱 SELECT IMAGE PROVIDER
+==================================================
+1. Pexels      - High-quality photos (200 req/hour)
+2. Pixabay     - Diverse images (100 req/hour, API key required)
+3. waifu.im    - Anime waifu (unlimited)
+4. nekos.moe   - Catgirls (unlimited)
+--------------------------------------------------
+Enter your choice (1-4): 3
+✅ Selected: waifu.im
 
-📸 Available categories:
-  1. nature
-  2. space
-  3. cyberpunk
-  ...
+==================================================
+👩 SELECT WAIFU CATEGORY
+==================================================
+1. Waifu
+2. Maid
+3. Miko
+4. Oppai
+5. Uniform
+6. Kitsune
+7. Demon
+8. Elf
+9. Random
+--------------------------------------------------
+Enter your choice (1-9): 1
+✅ Selected category: waifu
 
-Select a category (1-11): 2
+==================================================
+📐 SELECT RESOLUTION
+==================================================
+1. 1920x1080
+2. 1366x768
+3. 1280x720
+4. 2560x1440
+5. 3840x2160
+6. Custom resolution
+--------------------------------------------------
+Enter your choice (1-6): 1
+✅ Selected resolution: 1920x1080
 
-📐 Available resolutions:
-  1. 1920x1080
-  2. 2560x1440
-  3. 3840x2160
-  4. custom
-
-Select resolution (1-4): 1
-
-🎨 Moods (optional):
-  1. dark
-  2. light
-  3. vibrant
-  ...
-
-Select mood (1-7) or skip: 1
-
-⏳ Downloading from Pexels (space dark)...
+==================================================
+⏳ DOWNLOADING WALLPAPER
+==================================================
+⏳ Downloading from waifu.im (waifu)...
 ✅ Download successful!
-💾 Wallpaper saved to: /home/user/.wallpapers/wallpaper.jpg
-✅ Wallpaper set successfully on Linux (GNOME)!
+💾 Wallpaper saved to: /home/user/.easy-wallpaper/wallpaper.png
 
-============================================================
-🎉 All done! Enjoy your new wallpaper!
-============================================================
+==================================================
+🎨 SETTING WALLPAPER
+==================================================
+✅ Wallpaper set successfully!
+
+==================================================
+✨ SUCCESS!
+==================================================
+Your new wallpaper has been set successfully!
+Provider: waifu.im
+Category: waifu
+Saved to: /home/user/.easy-wallpaper/wallpaper.png
+==================================================
 ```
 
-## How It Works
+## 🛠️ Extending the Application
 
-### Code Structure
+### Adding a New Provider
 
-- **`ImageProvider` (ABC)** - Abstract base class for image sources
-  - `PexelsProvider` - Implementation for Pexels
-  - `PixabayProvider` - Implementation for Pixabay
-  - `WaifuImProvider` - Implementation for waifu.im anime images
-- **`get_provider()`** - Prompts user to select an image provider
-- **`get_category()`** - Prompts user for wallpaper category
-- **`get_resolution()`** - Prompts user for image resolution
-- **`get_mood()`** - Optionally prompts user for mood filter
-- **`save_wallpaper()`** - Saves image to `~/.wallpapers/`
-- **`set_wallpaper()`** - Dispatches to OS-specific setter
-- **`set_wallpaper_windows()`** - Uses Windows API via ctypes
-- **`set_wallpaper_macos()`** - Uses AppleScript via osascript
-- **`set_wallpaper_linux()`** - Uses gsettings (GNOME), feh, or nitrogen
+1. Create a new class inheriting from `ImageProvider` in `providers.py`:
 
-### Wallpaper Storage
+```python
+class MyProvider(ImageProvider):
+    def get_name(self) -> str:
+        return "My Provider"
+    
+    def get_description(self) -> str:
+        return "My Provider Description"
+    
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Implementation here
+        pass
+```
+
+2. Register it in `config.py`:
+
+```python
+PROVIDERS = {
+    "1": PexelsProvider(),
+    "2": PixabayProvider(),
+    "3": WaifuImProvider(),
+    "4": CatgirlProvider(),
+    "5": MyProvider(),  # Add here
+}
+
+CATEGORIES = {
+    "My Provider": ["category1", "category2", ...],
+    # ... other providers
+}
+```
+
+3. Update the menu in `ui.py` if needed
+
+## 📁 Wallpaper Storage
 
 Downloaded wallpapers are saved to:
-- **Linux/macOS:** `~/.wallpapers/wallpaper.jpg`
-- **Windows:** `C:\Users\<username>\.wallpapers\wallpaper.jpg`
+- **Windows**: `%APPDATA%\Roaming\easy-wallpaper\`
+- **macOS**: `~/.easy-wallpaper/`
+- **Linux**: `~/.easy-wallpaper/`
 
-## Requirements
+## ⚙️ Configuration
 
-### Python
-- Python 3.7+
+Edit `config.py` to customize:
+- Available categories for each provider
+- Default provider and category
+- Available resolutions
+- Default values
 
-### Dependencies
-- `requests` - For HTTP requests to image providers
+## 🐛 Troubleshooting
 
-### OS-Specific Requirements
-
-**Linux:**
-- For GNOME: `gsettings` (usually pre-installed)
-- Fallback options: `feh` or `nitrogen` if GNOME is not available
-
-  Install feh:
-  ```bash
-  sudo apt install feh  # Debian/Ubuntu
-  sudo pacman -S feh     # Arch
-  ```
-
-**macOS:**
-- `osascript` (built-in)
-
-**Windows:**
-- No additional requirements (uses built-in Windows API)
-
-## Environment Variables
-
-- **`PEXELS_API_KEY`** (optional) - For higher Pexels rate limits
-- **`PIXABAY_API_KEY`** (optional) - Required to use Pixabay provider
-
-## Troubleshooting
-
-### "No images found for..."
-- Try a different category or mood
-- Check your internet connection
-- Verify the image provider is accessible from your region
-
-### "API key not set" (for Pixabay)
-- Pixabay requires a free API key
-- Get one at [https://pixabay.com/api/](https://pixabay.com/api/)
-- Set it: `export PIXABAY_API_KEY='your-key'`
-
-### "Could not set wallpaper on Linux"
-Install one of the supported tools:
+### "Module not found" errors
+Make sure all modules are in the same directory and run with:
 ```bash
-sudo apt install feh nitrogen  # Debian/Ubuntu
+python main.py
 ```
+
+### API key errors
+Ensure API keys are set as environment variables:
+```bash
+echo $PEXELS_API_KEY  # Check if set
+export PEXELS_API_KEY='your-key'  # Set if missing
+```
+
+### Linux wallpaper not setting
+Install one of the required wallpaper tools:
+```bash
+sudo apt install feh  # For any X11 desktop
+sudo apt install dconf-cli  # For GNOME
+sudo apt install pcmanfm-desktop  # For XFCE/LXDE
+```
+
+### macOS wallpaper not setting
+Ensure you allow the script to control your computer:
+- System Preferences → Security & Privacy → Accessibility
+- Add Terminal (or your Python IDE) to the allowed apps
+
+## 📝 License
+
+This project is licensed under the MIT License - see LICENSE file for details.
+
+## 🙏 Credits
+
+- [Pexels](https://www.pexels.com/) - Free stock photos
+- [Pixabay](https://pixabay.com/) - Free images and vectors
+- [waifu.im](https://waifu.im/) - Anime image API
+- [nekos.moe](https://nekos.moe/) - Anime catgirl images
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📧 Support
+
+For issues, questions, or feature requests, please open an issue on GitHub.
+
+---
+
+**Enjoy beautiful wallpapers! 🖼️✨**
 
 ### "Failed to download wallpaper"
 - Check your internet connection
