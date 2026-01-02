@@ -7,6 +7,27 @@ Handles all user prompts and menu displays.
 from config import PROVIDERS, CATEGORIES, MOODS, RESOLUTIONS
 
 
+def get_nsfw_preference() -> bool:
+    """
+    Ask the user if they want to allow NSFW content.
+
+    Returns:
+        bool: True if allowed, False otherwise
+    """
+    print("\n" + "=" * 50)
+    print("🔞 NSFW CONTENT SETTING")
+    print("=" * 50)
+    while True:
+        choice = input("Allow NSFW content? (y/n): ").strip().lower()
+        if choice in ['y', 'yes']:
+            print("✅ NSFW content allowed")
+            return True
+        elif choice in ['n', 'no']:
+            print("❌ NSFW content disabled")
+            return False
+        print("❌ Invalid choice. Please enter 'y' or 'n'.")
+
+
 def get_provider() -> tuple:
     """
     Display provider options and get user selection.
@@ -63,10 +84,13 @@ def get_os_choice() -> str:
         print("❌ Invalid choice. Please enter 1-4.")
 
 
-def get_waifu_category() -> str:
+def get_waifu_category(nsfw_allowed: bool) -> str:
     """
     Get waifu category selection.
     
+    Args:
+        nsfw_allowed: Whether NSFW content is allowed
+
     Returns:
         str: Selected category
     """
@@ -95,14 +119,24 @@ def get_waifu_category() -> str:
             print(f"❌ Please enter a number between 1-{len(categories) + 1}.")
 
 
-def get_catgirl_category() -> str:
+def get_catgirl_category(nsfw_allowed: bool) -> str:
     """
     Get catgirl category selection.
     
+    Args:
+        nsfw_allowed: Whether NSFW content is allowed
+
     Returns:
         str: Selected category
     """
-    categories = CATEGORIES.get("nekos.moe", [])
+    all_categories = CATEGORIES.get("nekos.moe", [])
+    categories = []
+
+    # Filter categories based on NSFW setting
+    for cat in all_categories:
+        if not nsfw_allowed and (cat == "nsfw" or cat == "mixed"):
+            continue
+        categories.append(cat)
     
     print("\n" + "=" * 50)
     print("🐱 SELECT CATGIRL CATEGORY")
@@ -127,20 +161,21 @@ def get_catgirl_category() -> str:
             print(f"❌ Please enter a number between 1-{len(categories) + 1}.")
 
 
-def get_category(provider_name: str) -> str:
+def get_category(provider_name: str, nsfw_allowed: bool) -> str:
     """
     Get image category selection based on provider.
     
     Args:
         provider_name: Name of the selected provider
+        nsfw_allowed: Whether NSFW content is allowed
     
     Returns:
         str: Selected category
     """
     if provider_name == "waifu.im":
-        return get_waifu_category()
+        return get_waifu_category(nsfw_allowed)
     elif provider_name == "nekos.moe":
-        return get_catgirl_category()
+        return get_catgirl_category(nsfw_allowed)
     
     categories = CATEGORIES.get(provider_name, [])
     

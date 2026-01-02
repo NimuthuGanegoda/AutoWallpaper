@@ -21,6 +21,7 @@ from ui import (
     get_category,
     get_mood,
     get_resolution,
+    get_nsfw_preference,
 )
 from wallpaper import save_wallpaper, set_wallpaper
 
@@ -33,11 +34,14 @@ def main():
     print("\nDownload and set beautiful wallpapers effortlessly!")
     
     try:
+        # Get NSFW preference
+        nsfw_allowed = get_nsfw_preference()
+
         # Get provider selection
         provider_key, provider = get_provider()
         
         # Get category
-        category = get_category(provider.get_name())
+        category = get_category(provider.get_name(), nsfw_allowed)
         print(f"✅ Selected category: {category}")
         
         # Get mood (if available)
@@ -54,7 +58,7 @@ def main():
         print("=" * 50)
         
         # Download image from provider
-        image_data = provider.download_image(category, mood)
+        image_data = provider.download_image(category, mood, nsfw=nsfw_allowed)
         
         # Save the wallpaper
         wallpaper_path = save_wallpaper(image_data)

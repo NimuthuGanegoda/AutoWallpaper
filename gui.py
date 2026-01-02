@@ -60,8 +60,18 @@ class AutoWallpaperGUI:
         )
         title_label.grid(row=0, column=0, pady=(0, 20))
         
+        # NSFW Toggle
+        self.nsfw_var = tk.BooleanVar(value=False)
+        nsfw_check = ttk.Checkbutton(
+            main_frame,
+            text="🔞 Allow NSFW Content",
+            variable=self.nsfw_var,
+            command=self.on_nsfw_change
+        )
+        nsfw_check.grid(row=1, column=0, sticky=tk.W, pady=(0, 10))
+
         # Provider Selection
-        self.add_section(main_frame, "📱 Image Provider", 1)
+        self.add_section(main_frame, "📱 Image Provider", 2)
         self.provider_var = tk.StringVar()
         provider_combo = ttk.Combobox(
             main_frame,
@@ -70,17 +80,17 @@ class AutoWallpaperGUI:
             state="readonly",
             width=40
         )
-        provider_combo.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        provider_combo.grid(row=3, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
         provider_combo.bind("<<ComboboxSelected>>", self.on_provider_change)
         provider_combo.current(0)
         self.on_provider_change()
         
         # Description label
         self.provider_desc = ttk.Label(main_frame, text="", foreground="gray")
-        self.provider_desc.grid(row=3, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        self.provider_desc.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
         
         # Category Selection
-        self.add_section(main_frame, "📂 Category", 4)
+        self.add_section(main_frame, "📂 Category", 5)
         self.category_var = tk.StringVar()
         self.category_combo = ttk.Combobox(
             main_frame,
@@ -88,10 +98,10 @@ class AutoWallpaperGUI:
             state="readonly",
             width=40
         )
-        self.category_combo.grid(row=5, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        self.category_combo.grid(row=6, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
         
         # Mood Selection
-        self.add_section(main_frame, "🎨 Mood (Optional)", 6)
+        self.add_section(main_frame, "🎨 Mood (Optional)", 7)
         self.mood_var = tk.StringVar()
         self.mood_combo = ttk.Combobox(
             main_frame,
@@ -100,11 +110,11 @@ class AutoWallpaperGUI:
             state="readonly",
             width=40
         )
-        self.mood_combo.grid(row=7, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        self.mood_combo.grid(row=8, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
         self.mood_combo.current(0)
         
         # Resolution Selection
-        self.add_section(main_frame, "📐 Resolution", 8)
+        self.add_section(main_frame, "📐 Resolution", 9)
         self.resolution_var = tk.StringVar()
         resolution_combo = ttk.Combobox(
             main_frame,
@@ -113,7 +123,7 @@ class AutoWallpaperGUI:
             state="readonly",
             width=40
         )
-        resolution_combo.grid(row=9, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
+        resolution_combo.grid(row=10, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
         resolution_combo.current(0)
         
         # Download Button
@@ -122,7 +132,7 @@ class AutoWallpaperGUI:
             text="⬇️  Download & Set Wallpaper",
             command=self.on_download
         )
-        self.download_button.grid(row=10, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        self.download_button.grid(row=11, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
         
         # Progress bar
         self.progress = ttk.Progressbar(
@@ -130,7 +140,7 @@ class AutoWallpaperGUI:
             mode="indeterminate",
             length=400
         )
-        self.progress.grid(row=11, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        self.progress.grid(row=12, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
         
         # Status label
         self.status_var = tk.StringVar(value="Ready")
@@ -140,11 +150,11 @@ class AutoWallpaperGUI:
             foreground="green",
             justify=tk.CENTER
         )
-        status_label.grid(row=12, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        status_label.grid(row=13, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
         
         # Info frame at bottom
         info_frame = ttk.Frame(main_frame)
-        info_frame.grid(row=13, column=0, sticky=(tk.W, tk.E), pady=(20, 0))
+        info_frame.grid(row=14, column=0, sticky=(tk.W, tk.E), pady=(20, 0))
         
         info_label = ttk.Label(
             info_frame,
@@ -163,6 +173,11 @@ class AutoWallpaperGUI:
         )
         section_label.grid(row=row, column=0, sticky=tk.W, pady=(10, 5))
     
+    def on_nsfw_change(self):
+        """Handle NSFW toggle change."""
+        # Refresh categories based on new NSFW setting
+        self.on_provider_change()
+
     def on_provider_change(self, event=None):
         """Handle provider selection change."""
         provider_name = self.provider_var.get()
@@ -176,10 +191,24 @@ class AutoWallpaperGUI:
                 self.provider_desc.config(text=f"ℹ️  {provider.get_description()}")
                 
                 # Update categories
-                categories = CATEGORIES.get(provider_name, [])
+                all_categories = CATEGORIES.get(provider_name, [])
+
+                # Filter categories if nekos.moe and NSFW disabled
+                categories = []
+                if provider_name == "nekos.moe":
+                    nsfw_allowed = self.nsfw_var.get()
+                    for cat in all_categories:
+                        if not nsfw_allowed and (cat == "nsfw" or cat == "mixed"):
+                            continue
+                        categories.append(cat)
+                else:
+                    categories = all_categories
+
                 self.category_combo['values'] = categories
                 if categories:
                     self.category_combo.current(0)
+                else:
+                    self.category_combo.set('')
                 
                 # Update moods
                 moods = MOODS.get(provider_name, [""])
@@ -210,6 +239,7 @@ class AutoWallpaperGUI:
         category = self.category_var.get()
         mood = self.mood_var.get()
         mood = mood if mood != "None" else ""
+        nsfw = self.nsfw_var.get()
         
         # Disable button and show progress
         self.download_button.config(state="disabled")
@@ -221,25 +251,26 @@ class AutoWallpaperGUI:
         # Run download in separate thread to avoid freezing GUI
         thread = threading.Thread(
             target=self.download_wallpaper,
-            args=(category, mood)
+            args=(category, mood, nsfw)
         )
         thread.daemon = True
         thread.start()
     
-    def download_wallpaper(self, category: str, mood: str):
+    def download_wallpaper(self, category: str, mood: str, nsfw: bool):
         """
         Download and set wallpaper in separate thread.
         
         Args:
             category: Image category
             mood: Optional mood filter
+            nsfw: Whether to allow NSFW content
         """
         try:
             # Update status
             self.root.after(0, lambda: self.status_var.set("⏳ Downloading image..."))
             
             # Download image
-            image_data = self.current_provider.download_image(category, mood)
+            image_data = self.current_provider.download_image(category, mood, nsfw=nsfw)
             
             # Update status
             self.root.after(0, lambda: self.status_var.set("💾 Saving image..."))

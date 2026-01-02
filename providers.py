@@ -27,13 +27,14 @@ class ImageProvider(ABC):
         pass
     
     @abstractmethod
-    def download_image(self, category: str, mood: str = "") -> bytes:
+    def download_image(self, category: str, mood: str = "", nsfw: bool = False) -> bytes:
         """
         Download an image based on category and mood.
         
         Args:
             category: Image category/search term
             mood: Optional mood filter
+            nsfw: Whether to allow NSFW content
         
         Returns:
             bytes: The image file content
@@ -57,7 +58,7 @@ class PexelsProvider(ImageProvider):
     def get_description(self) -> str:
         return "High-quality images (no key required, 200 req/hour)"
     
-    def download_image(self, category: str, mood: str = "") -> bytes:
+    def download_image(self, category: str, mood: str = "", nsfw: bool = False) -> bytes:
         """Download image from Pexels."""
         query = category
         if mood:
@@ -114,7 +115,7 @@ class PixabayProvider(ImageProvider):
     def get_description(self) -> str:
         return "Diverse images (requires API key, 100 req/hour)"
     
-    def download_image(self, category: str, mood: str = "") -> bytes:
+    def download_image(self, category: str, mood: str = "", nsfw: bool = False) -> bytes:
         """Download image from Pixabay."""
         if not self.api_key:
             raise RuntimeError(
@@ -170,14 +171,14 @@ class WaifuImProvider(ImageProvider):
     def get_description(self) -> str:
         return "Anime waifu images (no key required, unlimited)"
     
-    def download_image(self, category: str, mood: str = "") -> bytes:
+    def download_image(self, category: str, mood: str = "", nsfw: bool = False) -> bytes:
         """Download image from waifu.im."""
         # Map categories to waifu.im tags
         waifu_tags = self._map_category_to_tags(category)
         
         params = {
             "included_tags": ",".join(waifu_tags),
-            "is_nsfw": "false",
+            "is_nsfw": "true" if nsfw else "false",
             "orientation": "landscape",
         }
         
@@ -243,12 +244,15 @@ class CatgirlProvider(ImageProvider):
     def get_description(self) -> str:
         return "Catgirl images (no key required, unlimited)"
     
-    def download_image(self, category: str, mood: str = "") -> bytes:
+    def download_image(self, category: str, mood: str = "", nsfw: bool = False) -> bytes:
         """Download image from nekos.moe."""
         nsfw_param = self._map_category_to_nsfw(category)
         
         params = {}
-        if nsfw_param is not None:
+        # If user did not enable NSFW globally, force it to false
+        if not nsfw:
+            params["nsfw"] = "false"
+        elif nsfw_param is not None:
             params["nsfw"] = nsfw_param
         
         try:
