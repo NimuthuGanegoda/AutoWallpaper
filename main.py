@@ -11,6 +11,7 @@ Usage:
 """
 
 import sys
+import argparse
 from pathlib import Path
 
 # Add parent directory to path for imports
@@ -21,21 +22,31 @@ from ui import (
     get_category,
     get_mood,
     get_resolution,
-    get_nsfw_preference,
 )
 from wallpaper import save_wallpaper, set_wallpaper
 
 
 def main():
     """Main entry point for the application."""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Easy Wallpaper Downloader")
+    parser.add_argument(
+        "--nsfw",
+        action="store_true",
+        help="Enable NSFW content (waifu.im and nekos.moe)"
+    )
+    args = parser.parse_args()
+
+    nsfw_allowed = args.nsfw
+
     print("\n" + "🖼️  " * 12)
     print(" " * 8 + "WELCOME TO EASY WALLPAPER")
     print("🖼️  " * 12)
     print("\nDownload and set beautiful wallpapers effortlessly!")
     
     try:
-        # Get NSFW preference
-        nsfw_allowed = get_nsfw_preference()
+        if nsfw_allowed:
+            print("🔞 NSFW content enabled via command line flag.")
 
         # Get provider selection
         provider_key, provider = get_provider()

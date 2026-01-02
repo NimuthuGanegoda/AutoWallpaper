@@ -7,27 +7,6 @@ Handles all user prompts and menu displays.
 from config import PROVIDERS, CATEGORIES, MOODS, RESOLUTIONS
 
 
-def get_nsfw_preference() -> bool:
-    """
-    Ask the user if they want to allow NSFW content.
-
-    Returns:
-        bool: True if allowed, False otherwise
-    """
-    print("\n" + "=" * 50)
-    print("🔞 NSFW CONTENT SETTING")
-    print("=" * 50)
-    while True:
-        choice = input("Allow NSFW content? (y/n): ").strip().lower()
-        if choice in ['y', 'yes']:
-            print("✅ NSFW content allowed")
-            return True
-        elif choice in ['n', 'no']:
-            print("❌ NSFW content disabled")
-            return False
-        print("❌ Invalid choice. Please enter 'y' or 'n'.")
-
-
 def get_provider() -> tuple:
     """
     Display provider options and get user selection.
