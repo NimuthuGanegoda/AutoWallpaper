@@ -60,6 +60,9 @@ class AutoWallpaperGUI:
         )
         title_label.grid(row=0, column=0, pady=(0, 20))
         
+        # Setup Menu Bar
+        self.setup_menu()
+
         # Provider Selection
         self.add_section(main_frame, "📱 Image Provider", 1)
         self.provider_var = tk.StringVar()
@@ -163,6 +166,28 @@ class AutoWallpaperGUI:
         )
         section_label.grid(row=row, column=0, sticky=tk.W, pady=(10, 5))
     
+    def setup_menu(self):
+        """Setup the application menu bar."""
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+
+        # Options Menu
+        options_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Options", menu=options_menu)
+
+        # NSFW Toggle in Menu
+        self.nsfw_var = tk.BooleanVar(value=False)
+        options_menu.add_checkbutton(
+            label="Allow NSFW Content",
+            variable=self.nsfw_var,
+            command=self.on_nsfw_change
+        )
+
+    def on_nsfw_change(self):
+        """Handle NSFW toggle change."""
+        # Refresh categories based on new NSFW setting
+        self.on_provider_change()
+
     def on_provider_change(self, event=None):
         """Handle provider selection change."""
         provider_name = self.provider_var.get()
@@ -176,10 +201,24 @@ class AutoWallpaperGUI:
                 self.provider_desc.config(text=f"ℹ️  {provider.get_description()}")
                 
                 # Update categories
-                categories = CATEGORIES.get(provider_name, [])
+                all_categories = CATEGORIES.get(provider_name, [])
+
+                # Filter categories if nekos.moe and NSFW disabled
+                categories = []
+                if provider_name == "nekos.moe":
+                    nsfw_allowed = self.nsfw_var.get()
+                    for cat in all_categories:
+                        if not nsfw_allowed and (cat == "nsfw" or cat == "mixed"):
+                            continue
+                        categories.append(cat)
+                else:
+                    categories = all_categories
+
                 self.category_combo['values'] = categories
                 if categories:
                     self.category_combo.current(0)
+                else:
+                    self.category_combo.set('')
                 
                 # Update moods
                 moods = MOODS.get(provider_name, [""])
@@ -210,6 +249,7 @@ class AutoWallpaperGUI:
         category = self.category_var.get()
         mood = self.mood_var.get()
         mood = mood if mood != "None" else ""
+        nsfw = self.nsfw_var.get()
         
         # Disable button and show progress
         self.download_button.config(state="disabled")
@@ -221,25 +261,26 @@ class AutoWallpaperGUI:
         # Run download in separate thread to avoid freezing GUI
         thread = threading.Thread(
             target=self.download_wallpaper,
-            args=(category, mood)
+            args=(category, mood, nsfw)
         )
         thread.daemon = True
         thread.start()
     
-    def download_wallpaper(self, category: str, mood: str):
+    def download_wallpaper(self, category: str, mood: str, nsfw: bool):
         """
         Download and set wallpaper in separate thread.
         
         Args:
             category: Image category
             mood: Optional mood filter
+            nsfw: Whether to allow NSFW content
         """
         try:
             # Update status
             self.root.after(0, lambda: self.status_var.set("⏳ Downloading image..."))
             
             # Download image
-            image_data = self.current_provider.download_image(category, mood)
+            image_data = self.current_provider.download_image(category, mood, nsfw=nsfw)
             
             # Update status
             self.root.after(0, lambda: self.status_var.set("💾 Saving image..."))
