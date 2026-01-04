@@ -17,19 +17,23 @@ def get_provider() -> tuple:
     print("\n" + "=" * 50)
     print("📱 SELECT IMAGE PROVIDER")
     print("=" * 50)
-    print("1. Pexels      - High-quality photos (200 req/hour)")
-    print("2. Pixabay     - Diverse images (100 req/hour, API key required)")
-    print("3. waifu.im    - Anime waifu (unlimited)")
-    print("4. nekos.moe   - Catgirls (unlimited)")
+
+    # Sort keys to ensure correct order
+    sorted_keys = sorted(PROVIDERS.keys(), key=lambda k: int(k))
+
+    for key in sorted_keys:
+        provider = PROVIDERS[key]
+        print(f"{key}. {provider.get_name():<12} - {provider.get_description()}")
+
     print("-" * 50)
     
     while True:
-        choice = input("Enter your choice (1-4): ").strip()
+        choice = input(f"Enter your choice (1-{len(PROVIDERS)}): ").strip()
         if choice in PROVIDERS:
             provider = PROVIDERS[choice]
             print(f"✅ Selected: {provider.get_name()}")
             return choice, provider
-        print("❌ Invalid choice. Please enter 1-4.")
+        print(f"❌ Invalid choice. Please enter 1-{len(PROVIDERS)}.")
 
 
 def get_os_choice() -> str:
