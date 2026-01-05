@@ -4,7 +4,16 @@ Configuration constants for easy-wallpaper.
 Defines categories, moods, resolutions, and provider mapping.
 """
 
-from providers import PexelsProvider, PixabayProvider, WaifuImProvider, CatgirlProvider
+from providers import (
+    PexelsProvider,
+    PixabayProvider,
+    WaifuImProvider,
+    CatgirlProvider,
+    WallhavenProvider,
+    BingProvider,
+    UnsplashProvider,
+    PicsumProvider
+)
 
 # Provider mapping
 PROVIDERS = {
@@ -12,6 +21,10 @@ PROVIDERS = {
     "2": PixabayProvider(),
     "3": WaifuImProvider(),
     "4": CatgirlProvider(),
+    "5": WallhavenProvider(),
+    "6": BingProvider(),
+    "7": UnsplashProvider(),
+    "8": PicsumProvider(),
 }
 
 # Categories for each provider
@@ -56,6 +69,34 @@ CATEGORIES = {
         "nsfw",
         "mixed",
     ],
+    "Wallhaven": [
+        "anime",
+        "general",
+        "people",
+        "fantasy",
+        "cyberpunk",
+        "scifi",
+    ],
+    "Bing": [
+        "daily", # Bing only has "daily", but this keeps the UI consistent
+    ],
+    "Unsplash": [
+        "nature",
+        "travel",
+        "architecture",
+        "interiors",
+        "textures",
+        "animals",
+        "food",
+        "history",
+        "arts",
+    ],
+    "Picsum": [
+        "random",
+        "nature", # Acts as seed
+        "city",   # Acts as seed
+        "tech",   # Acts as seed
+    ],
 }
 
 # Moods for filtering
@@ -64,6 +105,10 @@ MOODS = {
     "Pixabay": ["colorful", "minimal", "artistic", "realistic"],
     "waifu.im": [""],
     "nekos.moe": [""],
+    "Wallhaven": ["", "dark", "minimalist"],
+    "Bing": [""],
+    "Unsplash": ["dark", "light", "colorful", "black_and_white"],
+    "Picsum": [""],
 }
 
 # Resolution options
