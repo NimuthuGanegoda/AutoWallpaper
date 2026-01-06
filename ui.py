@@ -21,10 +21,14 @@ def get_provider() -> tuple:
     print("2. Pixabay     - Diverse images (100 req/hour, API key required)")
     print("3. waifu.im    - Anime waifu (unlimited)")
     print("4. nekos.moe   - Catgirls (unlimited)")
+    print("5. Unsplash    - Professional photos (50 req/hour, API key required)")
+    print("6. Picsum      - Random placeholders (unlimited)")
+    print("7. Wallhaven   - Anime & General (optional key)")
+    print("8. Bing        - Daily wallpaper (unlimited)")
     print("-" * 50)
     
     while True:
-        choice = input("Enter your choice (1-4): ").strip()
+        choice = input("Enter your choice (1-8): ").strip()
         if choice in PROVIDERS:
             provider = PROVIDERS[choice]
             print(f"✅ Selected: {provider.get_name()}")

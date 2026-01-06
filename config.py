@@ -4,7 +4,16 @@ Configuration constants for easy-wallpaper.
 Defines categories, moods, resolutions, and provider mapping.
 """
 
-from providers import PexelsProvider, PixabayProvider, WaifuImProvider, CatgirlProvider
+from providers import (
+    PexelsProvider,
+    PixabayProvider,
+    WaifuImProvider,
+    CatgirlProvider,
+    UnsplashProvider,
+    PicsumProvider,
+    WallhavenProvider,
+    BingProvider
+)
 
 # Provider mapping
 PROVIDERS = {
@@ -12,6 +21,10 @@ PROVIDERS = {
     "2": PixabayProvider(),
     "3": WaifuImProvider(),
     "4": CatgirlProvider(),
+    "5": UnsplashProvider(),
+    "6": PicsumProvider(),
+    "7": WallhavenProvider(),
+    "8": BingProvider(),
 }
 
 # Categories for each provider
@@ -56,6 +69,29 @@ CATEGORIES = {
         "nsfw",
         "mixed",
     ],
+    "Unsplash": [
+        "nature",
+        "wallpapers",
+        "travel",
+        "3d-renders",
+        "textures-patterns",
+        "street-photography",
+    ],
+    "Picsum": [
+        "random",
+        "nature",
+        "people",
+        "tech",
+    ],
+    "Wallhaven": [
+        "general",
+        "anime",
+        "people",
+    ],
+    "Bing": [
+        "today",
+        "yesterday",
+    ],
 }
 
 # Moods for filtering
@@ -64,6 +100,10 @@ MOODS = {
     "Pixabay": ["colorful", "minimal", "artistic", "realistic"],
     "waifu.im": [""],
     "nekos.moe": [""],
+    "Unsplash": ["dark", "light", "pastel", "neon"],
+    "Picsum": [""],
+    "Wallhaven": [""],
+    "Bing": [""],
 }
 
 # Resolution options
