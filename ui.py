@@ -17,19 +17,23 @@ def get_provider() -> tuple:
     print("\n" + "=" * 50)
     print("📱 SELECT IMAGE PROVIDER")
     print("=" * 50)
-    print("1. Pexels      - High-quality photos (200 req/hour)")
-    print("2. Pixabay     - Diverse images (100 req/hour, API key required)")
-    print("3. waifu.im    - Anime waifu (unlimited)")
-    print("4. nekos.moe   - Catgirls (unlimited)")
+
+    # Sort providers by key to ensure order
+    sorted_keys = sorted(PROVIDERS.keys(), key=lambda k: int(k))
+
+    for key in sorted_keys:
+        provider = PROVIDERS[key]
+        print(f"{key}. {provider.get_name():<12} - {provider.get_description()}")
+
     print("-" * 50)
     
     while True:
-        choice = input("Enter your choice (1-4): ").strip()
+        choice = input(f"Enter your choice (1-{len(PROVIDERS)}): ").strip()
         if choice in PROVIDERS:
             provider = PROVIDERS[choice]
             print(f"✅ Selected: {provider.get_name()}")
             return choice, provider
-        print("❌ Invalid choice. Please enter 1-4.")
+        print(f"❌ Invalid choice. Please enter 1-{len(PROVIDERS)}.")
 
 
 def get_os_choice() -> str:
@@ -71,28 +75,7 @@ def get_waifu_category() -> str:
         str: Selected category
     """
     categories = CATEGORIES.get("waifu.im", [])
-    
-    print("\n" + "=" * 50)
-    print("👩 SELECT WAIFU CATEGORY")
-    print("=" * 50)
-    
-    for i, cat in enumerate(categories, 1):
-        print(f"{i}. {cat.capitalize()}")
-    print(f"{len(categories) + 1}. Random")
-    print("-" * 50)
-    
-    while True:
-        choice = input(f"Enter your choice (1-{len(categories) + 1}): ").strip()
-        try:
-            idx = int(choice) - 1
-            if 0 <= idx < len(categories):
-                return categories[idx]
-            elif idx == len(categories):
-                return "random"
-            else:
-                print(f"❌ Invalid choice. Please enter 1-{len(categories) + 1}.")
-        except ValueError:
-            print(f"❌ Please enter a number between 1-{len(categories) + 1}.")
+    return _select_from_list(categories, "👩 SELECT WAIFU CATEGORY")
 
 
 def get_catgirl_category() -> str:
@@ -103,28 +86,32 @@ def get_catgirl_category() -> str:
         str: Selected category
     """
     categories = CATEGORIES.get("nekos.moe", [])
-    
+    return _select_from_list(categories, "🐱 SELECT CATGIRL CATEGORY")
+
+
+def _select_from_list(items: list, title: str) -> str:
+    """Helper to select from a list of items."""
     print("\n" + "=" * 50)
-    print("🐱 SELECT CATGIRL CATEGORY")
+    print(title)
     print("=" * 50)
     
-    for i, cat in enumerate(categories, 1):
-        print(f"{i}. {cat.capitalize()}")
-    print(f"{len(categories) + 1}. Random")
+    for i, item in enumerate(items, 1):
+        print(f"{i}. {item.capitalize()}")
+    print(f"{len(items) + 1}. Random")
     print("-" * 50)
     
     while True:
-        choice = input(f"Enter your choice (1-{len(categories) + 1}): ").strip()
+        choice = input(f"Enter your choice (1-{len(items) + 1}): ").strip()
         try:
             idx = int(choice) - 1
-            if 0 <= idx < len(categories):
-                return categories[idx]
-            elif idx == len(categories):
+            if 0 <= idx < len(items):
+                return items[idx]
+            elif idx == len(items):
                 return "random"
             else:
-                print(f"❌ Invalid choice. Please enter 1-{len(categories) + 1}.")
+                print(f"❌ Invalid choice. Please enter 1-{len(items) + 1}.")
         except ValueError:
-            print(f"❌ Please enter a number between 1-{len(categories) + 1}.")
+            print(f"❌ Please enter a number between 1-{len(items) + 1}.")
 
 
 def get_category(provider_name: str) -> str:
@@ -144,7 +131,11 @@ def get_category(provider_name: str) -> str:
     
     categories = CATEGORIES.get(provider_name, [])
     
+    # If no predefined categories, ask for input
     if not categories:
+        # Special case for Bing which has "daily" but we might not need to ask
+        if provider_name == "Bing":
+             return "daily"
         return input("\n📂 Enter image category (e.g., 'nature', 'animals'): ").strip()
     
     print("\n" + "=" * 50)
