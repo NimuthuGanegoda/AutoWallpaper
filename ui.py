@@ -17,19 +17,22 @@ def get_provider() -> tuple:
     print("\n" + "=" * 50)
     print("📱 SELECT IMAGE PROVIDER")
     print("=" * 50)
-    print("1. Pexels      - High-quality photos (200 req/hour)")
-    print("2. Pixabay     - Diverse images (100 req/hour, API key required)")
-    print("3. waifu.im    - Anime waifu (unlimited)")
-    print("4. nekos.moe   - Catgirls (unlimited)")
+
+    # Sort providers by key to ensure order
+    sorted_keys = sorted(PROVIDERS.keys(), key=lambda k: int(k))
+
+    for key in sorted_keys:
+        provider = PROVIDERS[key]
+        print(f"{key}. {provider.get_name():<12} - {provider.get_description()}")
     print("-" * 50)
     
     while True:
-        choice = input("Enter your choice (1-4): ").strip()
+        choice = input(f"Enter your choice (1-{len(PROVIDERS)}): ").strip()
         if choice in PROVIDERS:
             provider = PROVIDERS[choice]
             print(f"✅ Selected: {provider.get_name()}")
             return choice, provider
-        print("❌ Invalid choice. Please enter 1-4.")
+        print(f"❌ Invalid choice. Please enter 1-{len(PROVIDERS)}.")
 
 
 def get_os_choice() -> str:
@@ -63,22 +66,28 @@ def get_os_choice() -> str:
         print("❌ Invalid choice. Please enter 1-4.")
 
 
-def get_waifu_category() -> str:
+def get_category_for_provider_simple(provider_name: str) -> str:
     """
-    Get waifu category selection.
+    Generic category selector for providers.
+    
+    Args:
+        provider_name: Name of the selected provider
     
     Returns:
         str: Selected category
     """
-    categories = CATEGORIES.get("waifu.im", [])
+    categories = CATEGORIES.get(provider_name, [])
+
+    if not categories:
+        return input(f"\n📂 Enter {provider_name} category (e.g., 'nature', 'anime'): ").strip()
     
     print("\n" + "=" * 50)
-    print("👩 SELECT WAIFU CATEGORY")
+    print(f"📂 SELECT {provider_name.upper()} CATEGORY")
     print("=" * 50)
     
     for i, cat in enumerate(categories, 1):
         print(f"{i}. {cat.capitalize()}")
-    print(f"{len(categories) + 1}. Random")
+    print(f"{len(categories) + 1}. Custom/Random")
     print("-" * 50)
     
     while True:
@@ -88,39 +97,8 @@ def get_waifu_category() -> str:
             if 0 <= idx < len(categories):
                 return categories[idx]
             elif idx == len(categories):
-                return "random"
-            else:
-                print(f"❌ Invalid choice. Please enter 1-{len(categories) + 1}.")
-        except ValueError:
-            print(f"❌ Please enter a number between 1-{len(categories) + 1}.")
-
-
-def get_catgirl_category() -> str:
-    """
-    Get catgirl category selection.
-    
-    Returns:
-        str: Selected category
-    """
-    categories = CATEGORIES.get("nekos.moe", [])
-    
-    print("\n" + "=" * 50)
-    print("🐱 SELECT CATGIRL CATEGORY")
-    print("=" * 50)
-    
-    for i, cat in enumerate(categories, 1):
-        print(f"{i}. {cat.capitalize()}")
-    print(f"{len(categories) + 1}. Random")
-    print("-" * 50)
-    
-    while True:
-        choice = input(f"Enter your choice (1-{len(categories) + 1}): ").strip()
-        try:
-            idx = int(choice) - 1
-            if 0 <= idx < len(categories):
-                return categories[idx]
-            elif idx == len(categories):
-                return "random"
+                custom = input("Enter custom category (or 'random'): ").strip()
+                return custom if custom else "random"
             else:
                 print(f"❌ Invalid choice. Please enter 1-{len(categories) + 1}.")
         except ValueError:
@@ -137,38 +115,10 @@ def get_category(provider_name: str) -> str:
     Returns:
         str: Selected category
     """
-    if provider_name == "waifu.im":
-        return get_waifu_category()
-    elif provider_name == "nekos.moe":
-        return get_catgirl_category()
+    # Specific handlers could be added here if needed, but the generic one works for most
+    # with the updated CATEGORIES list.
     
-    categories = CATEGORIES.get(provider_name, [])
-    
-    if not categories:
-        return input("\n📂 Enter image category (e.g., 'nature', 'animals'): ").strip()
-    
-    print("\n" + "=" * 50)
-    print(f"📂 SELECT {provider_name.upper()} CATEGORY")
-    print("=" * 50)
-    
-    for i, cat in enumerate(categories, 1):
-        print(f"{i}. {cat.capitalize()}")
-    print(f"{len(categories) + 1}. Custom category")
-    print("-" * 50)
-    
-    while True:
-        choice = input(f"Enter your choice (1-{len(categories) + 1}): ").strip()
-        try:
-            idx = int(choice) - 1
-            if 0 <= idx < len(categories):
-                return categories[idx]
-            elif idx == len(categories):
-                custom = input("Enter custom category: ").strip()
-                return custom if custom else "nature"
-            else:
-                print(f"❌ Invalid choice. Please enter 1-{len(categories) + 1}.")
-        except ValueError:
-            print(f"❌ Please enter a number between 1-{len(categories) + 1}.")
+    return get_category_for_provider_simple(provider_name)
 
 
 def get_resolution() -> str:
