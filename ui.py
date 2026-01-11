@@ -21,15 +21,19 @@ def get_provider() -> tuple:
     print("2. Pixabay     - Diverse images (100 req/hour, API key required)")
     print("3. waifu.im    - Anime waifu (unlimited)")
     print("4. nekos.moe   - Catgirls (unlimited)")
+    print("5. Wallhaven   - Anime/Fantasy (optional API key)")
+    print("6. Bing        - Daily Wallpaper (unlimited)")
+    print("7. Unsplash    - Professional photos (API key required)")
+    print("8. Picsum      - Random placeholders (unlimited)")
     print("-" * 50)
     
     while True:
-        choice = input("Enter your choice (1-4): ").strip()
+        choice = input("Enter your choice (1-8): ").strip()
         if choice in PROVIDERS:
             provider = PROVIDERS[choice]
             print(f"✅ Selected: {provider.get_name()}")
             return choice, provider
-        print("❌ Invalid choice. Please enter 1-4.")
+        print("❌ Invalid choice. Please enter 1-8.")
 
 
 def get_os_choice() -> str:
@@ -141,6 +145,9 @@ def get_category(provider_name: str) -> str:
         return get_waifu_category()
     elif provider_name == "nekos.moe":
         return get_catgirl_category()
+    elif provider_name == "Bing":
+        # Bing handles its own thing (daily), but we can return 'daily'
+        return "daily"
     
     categories = CATEGORIES.get(provider_name, [])
     
@@ -164,7 +171,7 @@ def get_category(provider_name: str) -> str:
                 return categories[idx]
             elif idx == len(categories):
                 custom = input("Enter custom category: ").strip()
-                return custom if custom else "nature"
+                return custom if custom else categories[0]
             else:
                 print(f"❌ Invalid choice. Please enter 1-{len(categories) + 1}.")
         except ValueError:
