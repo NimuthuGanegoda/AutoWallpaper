@@ -17,19 +17,20 @@ def get_provider() -> tuple:
     print("\n" + "=" * 50)
     print("📱 SELECT IMAGE PROVIDER")
     print("=" * 50)
-    print("1. Pexels      - High-quality photos (200 req/hour)")
-    print("2. Pixabay     - Diverse images (100 req/hour, API key required)")
-    print("3. waifu.im    - Anime waifu (unlimited)")
-    print("4. nekos.moe   - Catgirls (unlimited)")
+
+    for key in sorted(PROVIDERS.keys(), key=lambda k: int(k)):
+        provider = PROVIDERS[key]
+        print(f"{key}. {provider.get_name():<12} - {provider.get_description()}")
+
     print("-" * 50)
     
     while True:
-        choice = input("Enter your choice (1-4): ").strip()
+        choice = input(f"Enter your choice (1-{len(PROVIDERS)}): ").strip()
         if choice in PROVIDERS:
             provider = PROVIDERS[choice]
             print(f"✅ Selected: {provider.get_name()}")
             return choice, provider
-        print("❌ Invalid choice. Please enter 1-4.")
+        print(f"❌ Invalid choice. Please enter 1-{len(PROVIDERS)}.")
 
 
 def get_os_choice() -> str:
@@ -127,6 +128,29 @@ def get_catgirl_category() -> str:
             print(f"❌ Please enter a number between 1-{len(categories) + 1}.")
 
 
+def get_bing_category() -> str:
+    """
+    Get Bing category (day offset).
+
+    Returns:
+        str: Day offset as string (0-7)
+    """
+    print("\n" + "=" * 50)
+    print("📅 SELECT DAY (Bing Daily)")
+    print("=" * 50)
+    print("0. Today")
+    print("1. Yesterday")
+    print("2. 2 days ago")
+    print("... up to 7 days ago")
+    print("-" * 50)
+
+    while True:
+        choice = input("Enter number of days ago (0-7): ").strip()
+        if choice.isdigit() and 0 <= int(choice) <= 7:
+            return choice
+        print("❌ Invalid choice. Please enter 0-7.")
+
+
 def get_category(provider_name: str) -> str:
     """
     Get image category selection based on provider.
@@ -141,6 +165,8 @@ def get_category(provider_name: str) -> str:
         return get_waifu_category()
     elif provider_name == "nekos.moe":
         return get_catgirl_category()
+    elif provider_name == "Bing":
+        return get_bing_category()
     
     categories = CATEGORIES.get(provider_name, [])
     
@@ -164,7 +190,7 @@ def get_category(provider_name: str) -> str:
                 return categories[idx]
             elif idx == len(categories):
                 custom = input("Enter custom category: ").strip()
-                return custom if custom else "nature"
+                return custom if custom else categories[0]
             else:
                 print(f"❌ Invalid choice. Please enter 1-{len(categories) + 1}.")
         except ValueError:

@@ -4,7 +4,10 @@ Configuration constants for easy-wallpaper.
 Defines categories, moods, resolutions, and provider mapping.
 """
 
-from providers import PexelsProvider, PixabayProvider, WaifuImProvider, CatgirlProvider
+from providers import (
+    PexelsProvider, PixabayProvider, WaifuImProvider, CatgirlProvider,
+    WallhavenProvider, BingProvider, UnsplashProvider, PicsumProvider
+)
 
 # Provider mapping
 PROVIDERS = {
@@ -12,6 +15,10 @@ PROVIDERS = {
     "2": PixabayProvider(),
     "3": WaifuImProvider(),
     "4": CatgirlProvider(),
+    "5": WallhavenProvider(),
+    "6": BingProvider(),
+    "7": UnsplashProvider(),
+    "8": PicsumProvider(),
 }
 
 # Categories for each provider
@@ -56,6 +63,33 @@ CATEGORIES = {
         "nsfw",
         "mixed",
     ],
+    "Wallhaven": [
+        "anime",
+        "general",
+        "people",
+        "fantasy",
+        "scifi",
+        "cyberpunk",
+        "landscape",
+    ],
+    "Bing": [
+        "0", "1", "2", "3", "4", "5", "6", "7"
+    ],
+    "Unsplash": [
+        "nature",
+        "travel",
+        "architecture",
+        "interiors",
+        "textures",
+        "patterns",
+        "wallpapers",
+    ],
+    "Picsum": [
+        "random",
+        "nature",
+        "tech",
+        "city",
+    ],
 }
 
 # Moods for filtering
@@ -64,6 +98,10 @@ MOODS = {
     "Pixabay": ["colorful", "minimal", "artistic", "realistic"],
     "waifu.im": [""],
     "nekos.moe": [""],
+    "Wallhaven": [""],
+    "Bing": [""],
+    "Unsplash": ["black_and_white"],
+    "Picsum": ["grayscale", "blur"],
 }
 
 # Resolution options
