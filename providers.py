@@ -6,6 +6,10 @@ Provides abstract base class and concrete implementations for:
 - Pixabay (illustrations)
 - waifu.im (anime/waifu)
 - nekos.moe (catgirl)
+- Unsplash (photography)
+- Wallhaven (anime/general)
+- Bing (daily wallpapers)
+- Picsum (random/placeholders)
 """
 
 import os
@@ -297,3 +301,209 @@ class CatgirlProvider(ImageProvider):
                 return value
         
         return "false"
+
+
+class UnsplashProvider(ImageProvider):
+    """Image provider for Unsplash API."""
+
+    def __init__(self):
+        self.api_url = "https://api.unsplash.com/photos/random"
+        self.access_key = os.getenv("UNSPLASH_ACCESS_KEY", "")
+
+    def get_name(self) -> str:
+        return "Unsplash"
+
+    def get_description(self) -> str:
+        return "Professional photography (requires API key)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        """Download image from Unsplash."""
+        if not self.access_key:
+            raise RuntimeError(
+                "❌ UNSPLASH_ACCESS_KEY not set.\n"
+                "Get a free Access Key from: https://unsplash.com/developers\n"
+                "Then run: export UNSPLASH_ACCESS_KEY='your-key-here'"
+            )
+
+        query = category
+        if mood:
+            query = f"{category} {mood}"
+
+        if category.lower() == "random" and not mood:
+             params = {
+                "client_id": self.access_key,
+                "orientation": "landscape"
+            }
+        else:
+            params = {
+                "client_id": self.access_key,
+                "query": query,
+                "orientation": "landscape"
+            }
+
+        try:
+            print(f"⏳ Downloading from Unsplash ({query if query != 'random' else 'random'})...")
+            response = requests.get(self.api_url, params=params, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+            image_url = data["urls"]["regular"]
+
+            # Use raw url for download if needed, or just fetch the url
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+
+            print("✅ Download successful!")
+            return image_response.content
+
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to download from Unsplash: {e}")
+        except KeyError:
+            raise RuntimeError("❌ Unexpected Unsplash API response format.")
+
+
+class WallhavenProvider(ImageProvider):
+    """Image provider for Wallhaven API."""
+
+    def __init__(self):
+        self.api_url = "https://wallhaven.cc/api/v1/search"
+        self.api_key = os.getenv("WALLHAVEN_API_KEY", "")
+
+    def get_name(self) -> str:
+        return "Wallhaven"
+
+    def get_description(self) -> str:
+        return "Anime & General Wallpapers (Optional API Key)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        """Download image from Wallhaven."""
+        query = category
+        if mood:
+            query = f"{category} {mood}"
+
+        params = {
+            "q": query,
+            "sorting": "random",
+            "purity": "100" # SFW
+        }
+
+        if self.api_key:
+            params["apikey"] = self.api_key
+
+        try:
+            print(f"⏳ Downloading from Wallhaven ({query})...")
+            response = requests.get(self.api_url, params=params, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+            if not data.get("data"):
+                 raise RuntimeError(f"❌ No images found for '{query}' on Wallhaven.")
+
+            # Since we used sorting=random, the first result should be random enough from the search
+            image_url = data["data"][0]["path"]
+
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+
+            print("✅ Download successful!")
+            return image_response.content
+
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"❌ Failed to download from Wallhaven: {e}")
+        except KeyError:
+             raise RuntimeError("❌ Unexpected Wallhaven API response format.")
+
+
+class BingProvider(ImageProvider):
+    """Image provider for Bing Daily Wallpaper."""
+
+    def __init__(self):
+        self.api_url = "https://www.bing.com/HPImageArchive.aspx"
+
+    def get_name(self) -> str:
+        return "Bing"
+
+    def get_description(self) -> str:
+        return "Bing Daily Wallpapers (No key required)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        """
+        Download image from Bing.
+        Category here is treated as the 'index' (0 = today, 1 = yesterday, etc.)
+        Defaults to 0 (today) if not a digit.
+        """
+        idx = "0"
+        if category.isdigit():
+            idx = category
+
+        params = {
+            "format": "js",
+            "idx": idx,
+            "n": "1",
+            "mkt": "en-US"
+        }
+
+        try:
+            print(f"⏳ Downloading from Bing (Day offset: {idx})...")
+            response = requests.get(self.api_url, params=params, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+            if not data.get("images"):
+                 raise RuntimeError(f"❌ No images found on Bing.")
+
+            image_path = data["images"][0]["url"]
+            image_url = f"https://www.bing.com{image_path}"
+
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+
+            print("✅ Download successful!")
+            return image_response.content
+
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to download from Bing: {e}")
+        except KeyError:
+             raise RuntimeError("❌ Unexpected Bing API response format.")
+
+
+class PicsumProvider(ImageProvider):
+    """Image provider for Picsum (Lorem Picsum)."""
+
+    def __init__(self):
+        self.base_url = "https://picsum.photos"
+
+    def get_name(self) -> str:
+        return "Picsum"
+
+    def get_description(self) -> str:
+        return "Random high-quality placeholders (No key required)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        """
+        Download image from Picsum.
+        If category is 'random', uses /1920/1080
+        Else uses /seed/{category}/1920/1080
+        """
+
+        width = 1920
+        height = 1080
+
+        if category.lower() == "random":
+             image_url = f"{self.base_url}/{width}/{height}"
+        else:
+             # Sanitize category for URL
+             seed = "".join(c for c in category if c.isalnum() or c in "-_")
+             image_url = f"{self.base_url}/seed/{seed}/{width}/{height}"
+
+        try:
+            print(f"⏳ Downloading from Picsum ({category})...")
+            # Picsum redirects to the actual image, so allow_redirects=True (default)
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+
+            print("✅ Download successful!")
+            return image_response.content
+
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to download from Picsum: {e}")
