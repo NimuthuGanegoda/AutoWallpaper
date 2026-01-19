@@ -9,6 +9,10 @@ A modular Python application that downloads beautiful wallpapers from multiple s
   - 🎨 **Pixabay** - Diverse images and illustrations (100 requests/hour, API key required)
   - 👩 **waifu.im** - Anime waifu images (unlimited, no API key required)
   - 🐱 **nekos.moe** - Catgirl images (unlimited, no API key required)
+  - 🌊 **Unsplash** - Professional photos (requires API key)
+  - 🎲 **Picsum** - Random placeholder images (no key required)
+  - 🖼️ **Wallhaven** - Anime & General wallpapers (key optional)
+  - 📅 **Bing** - Daily wallpaper (no key required)
 
 - **Cross-Platform Support**
   - ✅ Windows (using WinAPI)
@@ -20,6 +24,7 @@ A modular Python application that downloads beautiful wallpapers from multiple s
   - Mood/style filters (where available)
   - Resolution preference
   - API key support for premium providers
+  - **Scheduled Updates**: Run in a loop to change wallpaper automatically
 
 ## 📋 Project Structure
 
@@ -39,6 +44,7 @@ AutoWallpaper/
 **`main.py`** - Main entry point that orchestrates the workflow:
 - Gets user inputs for provider, category, mood, and resolution
 - Coordinates image download, saving, and wallpaper setting
+- Handles CLI arguments and scheduling loops
 
 **`providers.py`** - Image provider implementations:
 - `ImageProvider` (ABC) - Base class for all providers
@@ -46,14 +52,18 @@ AutoWallpaper/
 - `PixabayProvider` - Pixabay illustration provider
 - `WaifuImProvider` - waifu.im anime provider
 - `CatgirlProvider` - nekos.moe catgirl provider
+- `UnsplashProvider` - Unsplash photo provider
+- `PicsumProvider` - Picsum random images
+- `WallhavenProvider` - Wallhaven wallpapers
+- `BingProvider` - Bing daily wallpaper
 
-**`config.py`** - Configuration and constants:
+**`config.py`** - Configuration and constants
 
 ## 💻 Usage
 
-### Basic Usage
+### Basic Usage (Interactive Mode)
 
-Run the application:
+Run the application without arguments to use the interactive menu:
 ```bash
 python main.py
 ```
@@ -64,81 +74,36 @@ chmod +x main.py
 ./main.py
 ```
 
+### CLI / Scheduled Usage
+
+You can automate wallpaper updates using command-line arguments:
+
+```bash
+# Update once from waifu.im
+python main.py --provider "waifu.im" --category "maid"
+
+# Update once from Wallhaven
+python main.py --provider "Wallhaven" --category "cyberpunk"
+
+# Run in a loop (update every 60 minutes)
+python main.py --provider "Picsum" --loop 60
+```
+
+**Arguments:**
+- `-p`, `--provider`: Provider ID (1-8) or Name (e.g., "Unsplash")
+- `-c`, `--category`: Image category (e.g., "nature", "random")
+- `-m`, `--mood`: Image mood (optional)
+- `-r`, `--resolution`: Resolution (default: 1920x1080)
+- `-l`, `--loop`: Loop interval in minutes (keeps running)
+
 ### Interactive Menu
 
 The application will guide you through:
-1. **Select Image Provider** - Choose between Pexels, Pixabay, waifu.im, or nekos.moe
+1. **Select Image Provider** - Choose from available providers
 2. **Select Category** - Choose from available categories for that provider
 3. **Select Mood** (optional) - Filter by mood/style if available
 4. **Select Resolution** - Choose your desired wallpaper resolution
 5. **Download & Set** - The app downloads and sets the wallpaper automatically
-
-### Example Session
-
-```
-🖼️  WELCOME TO EASY WALLPAPER
-
-==================================================
-📱 SELECT IMAGE PROVIDER
-==================================================
-1. Pexels      - High-quality photos (200 req/hour)
-2. Pixabay     - Diverse images (100 req/hour, API key required)
-3. waifu.im    - Anime waifu (unlimited)
-4. nekos.moe   - Catgirls (unlimited)
---------------------------------------------------
-Enter your choice (1-4): 3
-✅ Selected: waifu.im
-
-==================================================
-👩 SELECT WAIFU CATEGORY
-==================================================
-1. Waifu
-2. Maid
-3. Miko
-4. Oppai
-5. Uniform
-6. Kitsune
-7. Demon
-8. Elf
-9. Random
---------------------------------------------------
-Enter your choice (1-9): 1
-✅ Selected category: waifu
-
-==================================================
-📐 SELECT RESOLUTION
-==================================================
-1. 1920x1080
-2. 1366x768
-3. 1280x720
-4. 2560x1440
-5. 3840x2160
-6. Custom resolution
---------------------------------------------------
-Enter your choice (1-6): 1
-✅ Selected resolution: 1920x1080
-
-==================================================
-⏳ DOWNLOADING WALLPAPER
-==================================================
-⏳ Downloading from waifu.im (waifu)...
-✅ Download successful!
-💾 Wallpaper saved to: /home/user/.easy-wallpaper/wallpaper.png
-
-==================================================
-🎨 SETTING WALLPAPER
-==================================================
-✅ Wallpaper set successfully!
-
-==================================================
-✨ SUCCESS!
-==================================================
-Your new wallpaper has been set successfully!
-Provider: waifu.im
-Category: waifu
-Saved to: /home/user/.easy-wallpaper/wallpaper.png
-==================================================
-```
 
 ## 🛠️ Extending the Application
 
@@ -165,9 +130,8 @@ class MyProvider(ImageProvider):
 PROVIDERS = {
     "1": PexelsProvider(),
     "2": PixabayProvider(),
-    "3": WaifuImProvider(),
-    "4": CatgirlProvider(),
-    "5": MyProvider(),  # Add here
+    # ...
+    "9": MyProvider(),  # Add here
 }
 
 CATEGORIES = {
@@ -176,7 +140,7 @@ CATEGORIES = {
 }
 ```
 
-3. Update the menu in `ui.py` if needed
+3. Update the menu in `ui.py` if needed (it updates automatically based on config)
 
 ## 📁 Wallpaper Storage
 
@@ -204,8 +168,8 @@ python main.py
 ### API key errors
 Ensure API keys are set as environment variables:
 ```bash
-echo $PEXELS_API_KEY  # Check if set
-export PEXELS_API_KEY='your-key'  # Set if missing
+export PEXELS_API_KEY='your-key'
+export UNSPLASH_ACCESS_KEY='your-key'
 ```
 
 ### Linux wallpaper not setting
@@ -227,10 +191,14 @@ This project is licensed under the MIT License - see LICENSE file for details.
 
 ## 🙏 Credits
 
-- [Pexels](https://www.pexels.com/) - Free stock photos
-- [Pixabay](https://pixabay.com/) - Free images and vectors
-- [waifu.im](https://waifu.im/) - Anime image API
-- [nekos.moe](https://nekos.moe/) - Anime catgirl images
+- [Pexels](https://www.pexels.com/)
+- [Pixabay](https://pixabay.com/)
+- [waifu.im](https://waifu.im/)
+- [nekos.moe](https://nekos.moe/)
+- [Unsplash](https://unsplash.com/)
+- [Picsum](https://picsum.photos/)
+- [Wallhaven](https://wallhaven.cc/)
+- [Bing](https://www.bing.com/)
 
 ## 🤝 Contributing
 
@@ -247,78 +215,3 @@ For issues, questions, or feature requests, please open an issue on GitHub.
 ---
 
 **Enjoy beautiful wallpapers! 🖼️✨**
-
-### "Failed to download wallpaper"
-- Check your internet connection
-- Ensure you're not hitting the rate limit for your provider
-- Try switching to a different provider
-
-## Tips
-
-- **Custom categories:** You can enter any search term as a custom category (e.g., "sunset mountains", "retro cars")
-- **Automate wallpaper rotation:** Use cron (Linux/macOS) or Task Scheduler (Windows) to run the script periodically
-- **Start with Pexels:** No API key needed and high rate limits for personal use
-
-## Adding New Image Providers
-
-It's easy to add support for new image sources! Follow these steps:
-
-### 1. Create a new provider class
-
-```python
-class MyImageProvider(ImageProvider):
-    """Image provider for MyImageService."""
-    
-    def __init__(self):
-        self.api_url = "https://api.myimageservice.com/search"
-        self.api_key = os.getenv("MY_SERVICE_API_KEY", "")
-    
-    def get_name(self) -> str:
-        return "MyImageService"
-    
-    def get_description(self) -> str:
-        return "My description (X req/hour)"
-    
-    def download_image(self, category: str, mood: str = "") -> bytes:
-        # Implement your download logic here
-        # Return the image bytes
-        pass
-```
-
-### 2. Register the provider
-
-Add to the `PROVIDERS` dict:
-```python
-PROVIDERS = {
-    "1": PexelsProvider,
-    "2": PixabayProvider,
-    "3": MyImageProvider,  # Add your provider
-}
-```
-
-### 3. Submit a pull request!
-
-We'd love to add support for more providers.
-
-## License
-
-MIT
-
-## Contributing
-
-Contributions are welcome! Ideas:
-- Add support for more image providers (Unsplash, Flickr, etc.)
-- Improve wallpaper setting for other Linux desktop environments (KDE, Xfce)
-- Add configuration file support
-- Create a GUI version
-- Add wallpaper scheduling/rotation
-
-Feel free to open issues or submit pull requests!
-
-## Resources
-
-- [Pexels API Documentation](https://www.pexels.com/api/)
-- [Pixabay API Documentation](https://pixabay.com/api/docs/)
-- [Pexels](https://www.pexels.com/)
-- [Pixabay](https://pixabay.com/)
-

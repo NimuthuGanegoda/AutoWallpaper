@@ -238,6 +238,10 @@ class AutoWallpaperGUI:
             # Update status
             self.root.after(0, lambda: self.status_var.set("⏳ Downloading image..."))
             
+            # Set resolution if supported (e.g. for Picsum)
+            if hasattr(self.current_provider, 'set_resolution'):
+                self.current_provider.set_resolution(self.resolution_var.get())
+
             # Download image
             image_data = self.current_provider.download_image(category, mood)
             
