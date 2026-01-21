@@ -4,7 +4,16 @@ Configuration constants for easy-wallpaper.
 Defines categories, moods, resolutions, and provider mapping.
 """
 
-from providers import PexelsProvider, PixabayProvider, WaifuImProvider, CatgirlProvider
+from providers import (
+    PexelsProvider,
+    PixabayProvider,
+    WaifuImProvider,
+    CatgirlProvider,
+    UnsplashProvider,
+    WallhavenProvider,
+    BingProvider,
+    PicsumProvider
+)
 
 # Provider mapping
 PROVIDERS = {
@@ -12,6 +21,10 @@ PROVIDERS = {
     "2": PixabayProvider(),
     "3": WaifuImProvider(),
     "4": CatgirlProvider(),
+    "5": UnsplashProvider(),
+    "6": WallhavenProvider(),
+    "7": BingProvider(),
+    "8": PicsumProvider(),
 }
 
 # Categories for each provider
@@ -56,6 +69,46 @@ CATEGORIES = {
         "nsfw",
         "mixed",
     ],
+    "Unsplash": [
+        "nature",
+        "wallpapers",
+        "travel",
+        "animals",
+        "food",
+        "people",
+        "street-photography",
+        "arts-culture",
+        "history",
+        "technology",
+        "random",
+    ],
+    "Wallhaven": [
+        "anime",
+        "general",
+        "people",
+        "fantasy",
+        "scifi",
+        "cyberpunk",
+        "landscape",
+        "random",
+    ],
+    "Bing": [
+        "Today",
+        "Yesterday",
+        "2 days ago",
+        "3 days ago",
+        "4 days ago",
+        "5 days ago",
+        "6 days ago",
+        "7 days ago",
+    ],
+    "Picsum": [
+        "random",
+        "seed-1",
+        "seed-2",
+        "seed-3",
+        # User can type custom seed
+    ],
 }
 
 # Moods for filtering
@@ -64,6 +117,10 @@ MOODS = {
     "Pixabay": ["colorful", "minimal", "artistic", "realistic"],
     "waifu.im": [""],
     "nekos.moe": [""],
+    "Unsplash": ["dark", "light", "black_and_white"], # Unsplash supports these via "color" param? No, query.
+    "Wallhaven": [""],
+    "Bing": [""],
+    "Picsum": ["grayscale", "blur", "normal"],
 }
 
 # Resolution options
