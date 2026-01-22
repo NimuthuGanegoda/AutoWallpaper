@@ -84,9 +84,9 @@ def set_wallpaper_windows(image_path: str) -> None:
     """
     # pylint: disable=import-outside-toplevel, invalid-name
     import ctypes
-    # pylint: disable=unused-import
+    # pylint: disable=unused-import, import-error
     from ctypes import wintypes
-    # pylint: enable=unused-import
+    # pylint: enable=unused-import, import-error
 
     try:
         # Get absolute path

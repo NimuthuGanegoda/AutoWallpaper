@@ -6,8 +6,10 @@ setting wallpapers from various image providers.
 """
 
 import threading
+# pylint: disable=import-error
 import tkinter as tk
 from tkinter import ttk, messagebox
+# pylint: enable=import-error
 from typing import Optional
 
 from providers import ImageProvider
