@@ -13,37 +13,37 @@ Provides abstract base class and concrete implementations for:
 """
 
 import os
-from abc import ABC, abstractmethod
-import requests
 import re
 import random
+from abc import ABC, abstractmethod
+import requests
 
 
 class ImageProvider(ABC):
     """Abstract base class for image providers."""
-    
+
     @abstractmethod
     def get_name(self) -> str:
         """Return the provider's display name."""
         pass
-    
+
     @abstractmethod
     def get_description(self) -> str:
         """Return a brief description of the provider."""
         pass
-    
+
     @abstractmethod
     def download_image(self, category: str, mood: str = "") -> bytes:
         """
         Download an image based on category and mood.
-        
+
         Args:
             category: Image category/search term
             mood: Optional mood filter
-        
+
         Returns:
             bytes: The image file content
-        
+
         Raises:
             RuntimeError: If download fails
         """
@@ -62,29 +62,29 @@ class ImageProvider(ABC):
 
 class PexelsProvider(ImageProvider):
     """Image provider for Pexels API."""
-    
+
     def __init__(self):
         self.api_url = "https://api.pexels.com/v1/search"
         self.api_key = os.getenv("PEXELS_API_KEY", "")
-    
+
     def get_name(self) -> str:
         return "Pexels"
-    
+
     def get_description(self) -> str:
         return "High-quality images (no key required, 200 req/hour)"
-    
+
     def download_image(self, category: str, mood: str = "") -> bytes:
         """Download image from Pexels."""
         query = category
         if mood:
             query = f"{category} {mood}"
-        
+
         headers = {}
         if self.api_key:
             headers["Authorization"] = self.api_key
-        
+
         params = {"query": query, "per_page": 1}
-        
+
         try:
             print(f"⏳ Downloading from Pexels ({query})...")
             if self.api_key:
@@ -97,20 +97,20 @@ class PexelsProvider(ImageProvider):
                     "\nAlternatively, use waifu.im (option 3) which requires no API key!"
                 )
             response.raise_for_status()
-            
+
             data = response.json()
             if not data.get("photos"):
                 raise RuntimeError(f"❌ No images found for '{query}' on Pexels.")
-            
+
             photo = data["photos"][0]
             image_url = photo["src"].get("original") or photo["src"].get("large")
-            
+
             image_response = requests.get(image_url, timeout=15)
             image_response.raise_for_status()
-            
+
             print("✅ Download successful!")
             return image_response.content
-        
+
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"❌ Failed to download from Pexels: {e}")
         except KeyError:
@@ -119,17 +119,17 @@ class PexelsProvider(ImageProvider):
 
 class PixabayProvider(ImageProvider):
     """Image provider for Pixabay API."""
-    
+
     def __init__(self):
         self.api_url = "https://pixabay.com/api/"
         self.api_key = os.getenv("PIXABAY_API_KEY", "")
-    
+
     def get_name(self) -> str:
         return "Pixabay"
-    
+
     def get_description(self) -> str:
         return "Diverse images (requires API key, 100 req/hour)"
-    
+
     def download_image(self, category: str, mood: str = "") -> bytes:
         """Download image from Pixabay."""
         if not self.api_key:
@@ -138,36 +138,36 @@ class PixabayProvider(ImageProvider):
                 "Get a free API key from: https://pixabay.com/api/\n"
                 "Then run: export PIXABAY_API_KEY='your-key-here'"
             )
-        
+
         query = category
         if mood:
             query = f"{category} {mood}"
-        
+
         params = {
             "key": self.api_key,
             "q": query,
             "per_page": 1,
             "image_type": "photo",
         }
-        
+
         try:
             print(f"⏳ Downloading from Pixabay ({query})...")
             response = requests.get(self.api_url, params=params, timeout=15)
             response.raise_for_status()
-            
+
             data = response.json()
             if not data.get("hits"):
                 raise RuntimeError(f"❌ No images found for '{query}' on Pixabay.")
-            
+
             image_data = data["hits"][0]
             image_url = image_data.get("largeImageURL") or image_data.get("webformatURL")
-            
+
             image_response = requests.get(image_url, timeout=15)
             image_response.raise_for_status()
-            
+
             print("✅ Download successful!")
             return image_response.content
-        
+
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"❌ Failed to download from Pixabay: {e}")
         except KeyError:
@@ -176,49 +176,49 @@ class PixabayProvider(ImageProvider):
 
 class WaifuImProvider(ImageProvider):
     """Image provider for waifu.im API (anime/waifu images)."""
-    
+
     def __init__(self):
         self.api_url = "https://api.waifu.im/search"
-    
+
     def get_name(self) -> str:
         return "waifu.im"
-    
+
     def get_description(self) -> str:
         return "Anime waifu images (no key required, unlimited)"
-    
+
     def download_image(self, category: str, mood: str = "") -> bytes:
         """Download image from waifu.im."""
         # Map categories to waifu.im tags
         waifu_tags = self._map_category_to_tags(category)
-        
+
         params = {
             "included_tags": ",".join(waifu_tags),
             "is_nsfw": "false",
             "orientation": "landscape",
         }
-        
+
         try:
             print(f"⏳ Downloading from waifu.im ({category})...")
             response = requests.get(self.api_url, params=params, timeout=15)
             response.raise_for_status()
-            
+
             data = response.json()
             if not data.get("images"):
                 raise RuntimeError(f"❌ No images found for '{category}' on waifu.im.")
-            
+
             image_url = data["images"][0]["url"]
-            
+
             image_response = requests.get(image_url, timeout=15)
             image_response.raise_for_status()
-            
+
             print("✅ Download successful!")
             return image_response.content
-        
+
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"❌ Failed to download from waifu.im: {e}")
         except KeyError:
             raise RuntimeError("❌ Unexpected waifu.im API response format.")
-    
+
     @staticmethod
     def _map_category_to_tags(category: str) -> list:
         """Map user category to waifu.im tags."""
@@ -234,67 +234,67 @@ class WaifuImProvider(ImageProvider):
             "demon": ["demon"],
             "elf": ["elf"],
         }
-        
+
         category_lower = category.lower()
-        
+
         if category_lower in tag_map:
             return tag_map[category_lower]
-        
+
         for key in tag_map:
             if key in category_lower:
                 return tag_map[key]
-        
+
         return ["waifu"]
 
 
 class CatgirlProvider(ImageProvider):
     """Image provider for nekos.moe API (catgirl images)."""
-    
+
     def __init__(self):
         self.api_url = "https://nekos.moe/api/v1/random/image"
-    
+
     def get_name(self) -> str:
         return "nekos.moe"
-    
+
     def get_description(self) -> str:
         return "Catgirl images (no key required, unlimited)"
-    
+
     def download_image(self, category: str, mood: str = "") -> bytes:
         """Download image from nekos.moe."""
         nsfw_param = self._map_category_to_nsfw(category)
-        
+
         params = {}
         if nsfw_param is not None:
             params["nsfw"] = nsfw_param
-        
+
         try:
             print(f"⏳ Downloading from nekos.moe ({category})...")
             response = requests.get(self.api_url, params=params, timeout=15)
             response.raise_for_status()
-            
+
             data = response.json()
             if not data.get("images"):
                 raise RuntimeError(f"❌ No catgirl images found for '{category}' on nekos.moe.")
-            
+
             image_id = data["images"][0]["id"]
             image_url = f"https://nekos.moe/image/{image_id}"
-            
+
             image_response = requests.get(image_url, timeout=15)
             image_response.raise_for_status()
-            
+
             print("✅ Download successful!")
             return image_response.content
-        
+
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"❌ Failed to download from nekos.moe: {e}")
         except KeyError:
             raise RuntimeError("❌ Unexpected nekos.moe API response format.")
-    
+
     @staticmethod
     def _map_category_to_nsfw(category: str) -> str | None:
         """Map user category to nekos.moe NSFW setting."""
         category_lower = category.lower()
-        
+
         nsfw_map = {
             "safe": "false",
             "safe sfw": "false",
@@ -304,14 +304,14 @@ class CatgirlProvider(ImageProvider):
             "mixed": None,
             "all": None,
         }
-        
+
         if category_lower in nsfw_map:
             return nsfw_map[category_lower]
-        
+
         for key, value in nsfw_map.items():
             if key in category_lower:
                 return value
-        
+
         return "false"
 
 
@@ -330,7 +330,7 @@ class UnsplashProvider(ImageProvider):
 
     def download_image(self, category: str, mood: str = "") -> bytes:
         if not self.api_key:
-             raise RuntimeError(
+            raise RuntimeError(
                 "❌ UNSPLASH_ACCESS_KEY not set.\n"
                 "Get a free Access Key from: https://unsplash.com/developers\n"
                 "Then run: export UNSPLASH_ACCESS_KEY='your-key-here'"
@@ -342,7 +342,7 @@ class UnsplashProvider(ImageProvider):
 
         params = {"orientation": "landscape", "client_id": self.api_key}
         if query and query.lower() != "random":
-             params["query"] = query
+            params["query"] = query
 
         try:
             print(f"⏳ Downloading from Unsplash ({query})...")
@@ -392,12 +392,17 @@ class WallhavenProvider(ImageProvider):
 
         try:
             print(f"⏳ Downloading from Wallhaven ({query})...")
-            response = requests.get(self.api_url, params=params, timeout=15, headers={"User-Agent": "EasyWallpaper/1.0"})
+            response = requests.get(
+                self.api_url,
+                params=params,
+                timeout=15,
+                headers={"User-Agent": "EasyWallpaper/1.0"}
+            )
             response.raise_for_status()
 
             data = response.json()
             if not data.get("data"):
-                 raise RuntimeError(f"❌ No images found for '{query}' on Wallhaven.")
+                raise RuntimeError(f"❌ No images found for '{query}' on Wallhaven.")
 
             image_url = data["data"][0]["path"]
 
@@ -407,7 +412,7 @@ class WallhavenProvider(ImageProvider):
             print("✅ Download successful!")
             return image_response.content
         except requests.exceptions.RequestException as e:
-             raise RuntimeError(f"❌ Failed to download from Wallhaven: {e}")
+            raise RuntimeError(f"❌ Failed to download from Wallhaven: {e}")
 
 
 class BingProvider(ImageProvider):
@@ -436,7 +441,8 @@ class BingProvider(ImageProvider):
             except Exception:
                 idx = 0
 
-        if idx > 7: idx = 7
+        if idx > 7:
+            idx = 7
 
         params = {
             "format": "js",
@@ -452,7 +458,7 @@ class BingProvider(ImageProvider):
 
             data = response.json()
             if not data.get("images"):
-                 raise RuntimeError("❌ Failed to get Bing image info.")
+                raise RuntimeError("❌ Failed to get Bing image info.")
 
             url_base = data["images"][0]["url"]
             image_url = f"https://www.bing.com{url_base}"
@@ -463,7 +469,7 @@ class BingProvider(ImageProvider):
             print("✅ Download successful!")
             return image_response.content
         except requests.exceptions.RequestException as e:
-             raise RuntimeError(f"❌ Failed to download from Bing: {e}")
+            raise RuntimeError(f"❌ Failed to download from Bing: {e}")
 
 
 class PicsumProvider(ImageProvider):
@@ -494,12 +500,12 @@ class PicsumProvider(ImageProvider):
             else:
                 raise ValueError
         except ValueError:
-             width, height = "1920", "1080"
+            width, height = "1920", "1080"
 
         url = f"{self.base_url}/{width}/{height}"
 
         if category and category.lower() != "random":
-             url = f"{self.base_url}/seed/{category}/{width}/{height}"
+            url = f"{self.base_url}/seed/{category}/{width}/{height}"
 
         try:
             print(f"⏳ Downloading from Picsum ({url})...")
@@ -509,7 +515,7 @@ class PicsumProvider(ImageProvider):
             print("✅ Download successful!")
             return response.content
         except requests.exceptions.RequestException as e:
-             raise RuntimeError(f"❌ Failed to download from Picsum: {e}")
+            raise RuntimeError(f"❌ Failed to download from Picsum: {e}")
 
 
 class NasaApodProvider(ImageProvider):
@@ -529,7 +535,7 @@ class NasaApodProvider(ImageProvider):
         params = {"api_key": self.api_key}
 
         if category.lower() == "random":
-             params["count"] = 1
+            params["count"] = 1
 
         try:
             print(f"⏳ Downloading from NASA APOD ({category})...")
@@ -543,7 +549,7 @@ class NasaApodProvider(ImageProvider):
                 data = data[0]
 
             if data.get("media_type") != "image":
-                 raise RuntimeError("❌ Selected APOD is not an image (it might be a video).")
+                raise RuntimeError("❌ Selected APOD is not an image (it might be a video).")
 
             image_url = data.get("hdurl") or data.get("url")
 
@@ -553,7 +559,7 @@ class NasaApodProvider(ImageProvider):
             print("✅ Download successful!")
             return image_response.content
         except requests.exceptions.RequestException as e:
-             raise RuntimeError(f"❌ Failed to download from NASA APOD: {e}")
+            raise RuntimeError(f"❌ Failed to download from NASA APOD: {e}") from e
 
 
 class TheCatApiProvider(ImageProvider):
@@ -570,7 +576,7 @@ class TheCatApiProvider(ImageProvider):
 
     def download_image(self, category: str, mood: str = "") -> bytes:
         try:
-            print(f"⏳ Downloading from TheCatAPI...")
+            print("⏳ Downloading from TheCatAPI...")
             response = requests.get(self.api_url, timeout=15)
             response.raise_for_status()
 
@@ -580,13 +586,13 @@ class TheCatApiProvider(ImageProvider):
 
             image_url = data[0]["url"]
 
-            image_response = requests.get(image_url, timeout=15)
-            image_response.raise_for_status()
+            response = requests.get(image_url, timeout=15)
+            response.raise_for_status()
 
             print("✅ Download successful!")
-            return image_response.content
+            return response.content
         except requests.exceptions.RequestException as e:
-             raise RuntimeError(f"❌ Failed to download from TheCatAPI: {e}")
+            raise RuntimeError(f"❌ Failed to download from TheCatAPI: {e}") from e
 
 
 class TheDogApiProvider(ImageProvider):
@@ -603,7 +609,7 @@ class TheDogApiProvider(ImageProvider):
 
     def download_image(self, category: str, mood: str = "") -> bytes:
         try:
-            print(f"⏳ Downloading from TheDogAPI...")
+            print("⏳ Downloading from TheDogAPI...")
             response = requests.get(self.api_url, timeout=15)
             response.raise_for_status()
 
@@ -613,13 +619,13 @@ class TheDogApiProvider(ImageProvider):
 
             image_url = data[0]["url"]
 
-            image_response = requests.get(image_url, timeout=15)
-            image_response.raise_for_status()
+            response = requests.get(image_url, timeout=15)
+            response.raise_for_status()
 
             print("✅ Download successful!")
-            return image_response.content
+            return response.content
         except requests.exceptions.RequestException as e:
-             raise RuntimeError(f"❌ Failed to download from TheDogAPI: {e}")
+            raise RuntimeError(f"❌ Failed to download from TheDogAPI: {e}") from e
 
 
 class MetMuseumProvider(ImageProvider):
@@ -649,7 +655,7 @@ class MetMuseumProvider(ImageProvider):
 
             data = response.json()
             if not data.get("objectIDs"):
-                 raise RuntimeError(f"❌ No art found for '{query}'.")
+                raise RuntimeError(f"❌ No art found for '{query}'.")
 
             object_ids = data["objectIDs"]
 
@@ -666,15 +672,15 @@ class MetMuseumProvider(ImageProvider):
                     image_url = obj_data.get("primaryImage")
                     if image_url:
                         print(f"⏳ Downloading '{obj_data.get('title')}'...")
-                        img_resp = requests.get(image_url, timeout=30)
-                        img_resp.raise_for_status()
+                        response = requests.get(image_url, timeout=30)
+                        response.raise_for_status()
 
                         print("✅ Download successful!")
-                        return img_resp.content
+                        return response.content
                 except Exception:
                     continue
 
             raise RuntimeError("❌ Failed to find a valid image after multiple attempts.")
 
         except requests.exceptions.RequestException as e:
-             raise RuntimeError(f"❌ Failed to connect to The Met: {e}")
+            raise RuntimeError(f"❌ Failed to connect to The Met: {e}") from e
