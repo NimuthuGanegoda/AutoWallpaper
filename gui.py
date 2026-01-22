@@ -5,9 +5,9 @@ Provides a user-friendly graphical interface for downloading and
 setting wallpapers from various image providers.
 """
 
+import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
-import threading
 from typing import Optional
 
 from providers import ImageProvider
@@ -34,9 +34,25 @@ class AutoWallpaperGUI:
         self.current_provider: Optional[ImageProvider] = None
         self.downloading = False
 
+        # GUI Components (to avoid too many attributes warning in Pylint)
+        # We can store them in a dict if needed, or disable the warning.
+        # Disabling warning is cleaner for typical Tkinter apps.
+        # pylint: disable=too-many-instance-attributes
+
         # Configure style
         self.style = ttk.Style()
         self.style.theme_use('clam')
+
+        self.provider_var = tk.StringVar()
+        self.provider_desc: Optional[ttk.Label] = None
+        self.category_var = tk.StringVar()
+        self.category_combo: Optional[ttk.Combobox] = None
+        self.mood_var = tk.StringVar()
+        self.mood_combo: Optional[ttk.Combobox] = None
+        self.resolution_var = tk.StringVar()
+        self.download_button: Optional[ttk.Button] = None
+        self.progress: Optional[ttk.Progressbar] = None
+        self.status_var = tk.StringVar(value="Ready")
 
         # Setup GUI elements
         self.setup_ui()
@@ -62,7 +78,6 @@ class AutoWallpaperGUI:
 
         # Provider Selection
         self.add_section(main_frame, "📱 Image Provider", 1)
-        self.provider_var = tk.StringVar()
         provider_combo = ttk.Combobox(
             main_frame,
             textvariable=self.provider_var,
@@ -81,7 +96,6 @@ class AutoWallpaperGUI:
 
         # Category Selection
         self.add_section(main_frame, "📂 Category", 4)
-        self.category_var = tk.StringVar()
         self.category_combo = ttk.Combobox(
             main_frame,
             textvariable=self.category_var,
@@ -92,7 +106,6 @@ class AutoWallpaperGUI:
 
         # Mood Selection
         self.add_section(main_frame, "🎨 Mood (Optional)", 6)
-        self.mood_var = tk.StringVar()
         self.mood_combo = ttk.Combobox(
             main_frame,
             textvariable=self.mood_var,
@@ -105,7 +118,6 @@ class AutoWallpaperGUI:
 
         # Resolution Selection
         self.add_section(main_frame, "📐 Resolution", 8)
-        self.resolution_var = tk.StringVar()
         resolution_combo = ttk.Combobox(
             main_frame,
             textvariable=self.resolution_var,
@@ -133,7 +145,6 @@ class AutoWallpaperGUI:
         self.progress.grid(row=11, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
 
         # Status label
-        self.status_var = tk.StringVar(value="Ready")
         status_label = ttk.Label(
             main_frame,
             textvariable=self.status_var,
@@ -163,7 +174,7 @@ class AutoWallpaperGUI:
         )
         section_label.grid(row=row, column=0, sticky=tk.W, pady=(10, 5))
 
-    def on_provider_change(self, event=None):
+    def on_provider_change(self, event=None): # pylint: disable=unused-argument
         """Handle provider selection change."""
         provider_name = self.provider_var.get()
 
@@ -173,22 +184,25 @@ class AutoWallpaperGUI:
                 self.current_provider = provider
 
                 # Update description
-                self.provider_desc.config(text=f"ℹ️  {provider.get_description()}")
+                if self.provider_desc:
+                    self.provider_desc.config(text=f"ℹ️  {provider.get_description()}")
 
                 # Update categories
                 categories = CATEGORIES.get(provider_name, [])
-                self.category_combo['values'] = categories
-                if categories:
-                    self.category_combo.current(0)
+                if self.category_combo:
+                    self.category_combo['values'] = categories
+                    if categories:
+                        self.category_combo.current(0)
 
                 # Update moods
                 moods = MOODS.get(provider_name, [""])
                 mood_list = [m for m in moods if m]
-                if mood_list:
-                    self.mood_combo['values'] = ["None"] + mood_list
-                else:
-                    self.mood_combo['values'] = ["None"]
-                self.mood_combo.current(0)
+                if self.mood_combo:
+                    if mood_list:
+                        self.mood_combo['values'] = ["None"] + mood_list
+                    else:
+                        self.mood_combo['values'] = ["None"]
+                    self.mood_combo.current(0)
 
                 break
 
@@ -212,9 +226,10 @@ class AutoWallpaperGUI:
         mood = mood if mood != "None" else ""
 
         # Disable button and show progress
-        self.download_button.config(state="disabled")
-        self.progress.start()
-        self.status_var.set("⏳ Downloading...")
+        if self.download_button:
+            self.download_button.config(state="disabled")
+        if self.progress:
+            self.progress.start()
         self.status_var.set("⏳ Downloading...")
         self.downloading = True
 
@@ -239,27 +254,28 @@ class AutoWallpaperGUI:
             self.root.after(0, lambda: self.status_var.set("⏳ Downloading image..."))
 
             # Download image
-            image_data = self.current_provider.download_image(category, mood)
+            if self.current_provider:
+                image_data = self.current_provider.download_image(category, mood)
 
-            # Update status
-            self.root.after(0, lambda: self.status_var.set("💾 Saving image..."))
+                # Update status
+                self.root.after(0, lambda: self.status_var.set("💾 Saving image..."))
 
-            # Save wallpaper
-            path = save_wallpaper(image_data)
+                # Save wallpaper
+                path = save_wallpaper(image_data)
 
-            # Update status
-            self.root.after(0, lambda: self.status_var.set("🎨 Setting wallpaper..."))
+                # Update status
+                self.root.after(0, lambda: self.status_var.set("🎨 Setting wallpaper..."))
 
-            # Set wallpaper
-            set_wallpaper(path)
+                # Set wallpaper
+                set_wallpaper(path)
 
-            # Success!
-            self.root.after(
-                0,
-                lambda: self.show_success(f"Wallpaper set successfully!\n{category}")
-            )
+                # Success!
+                self.root.after(
+                    0,
+                    lambda: self.show_success(f"Wallpaper set successfully!\n{category}")
+                )
 
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-exception-caught
             self.root.after(
                 0,
                 lambda: messagebox.showerror("Error", f"Failed to set wallpaper:\n\n{str(e)}")
@@ -271,8 +287,10 @@ class AutoWallpaperGUI:
 
     def on_download_complete(self):
         """Called when download is complete."""
-        self.download_button.config(state="normal")
-        self.progress.stop()
+        if self.download_button:
+            self.download_button.config(state="normal")
+        if self.progress:
+            self.progress.stop()
         self.downloading = False
         self.status_var.set("✅ Ready")
 
@@ -284,7 +302,7 @@ class AutoWallpaperGUI:
 def main():
     """Launch the GUI application."""
     root = tk.Tk()
-    app = AutoWallpaperGUI(root)
+    AutoWallpaperGUI(root) # pylint: disable=unused-variable
     root.mainloop()
 
 

@@ -46,7 +46,7 @@ def save_wallpaper(image_data: bytes, filename: str = "wallpaper.png") -> str:
         print(f"💾 Wallpaper saved to: {file_path}")
         return str(file_path)
     except IOError as e:
-        raise RuntimeError(f"❌ Failed to save wallpaper: {e}")
+        raise RuntimeError(f"❌ Failed to save wallpaper: {e}") from e
 
 
 def set_wallpaper(image_path: str) -> None:
@@ -82,8 +82,11 @@ def set_wallpaper_windows(image_path: str) -> None:
     Raises:
         RuntimeError: If operation fails
     """
+    # pylint: disable=import-outside-toplevel, invalid-name
     import ctypes
+    # pylint: disable=unused-import
     from ctypes import wintypes
+    # pylint: enable=unused-import
 
     try:
         # Get absolute path
@@ -92,11 +95,6 @@ def set_wallpaper_windows(image_path: str) -> None:
         # Use Windows API to set wallpaper
         user32 = ctypes.windll.user32
 
-        # SPI_SETDESKWALLPAPER = 20
-        result = ctypes.windll.kernel32.SetEnvironmentVariableW(
-            "WALLPAPER_PATH", abs_path
-        )
-
         # Alternative method using SystemParametersInfo
         SPI_SETDESKWALLPAPER = 20
         result = user32.SystemParametersInfoW(
@@ -104,12 +102,12 @@ def set_wallpaper_windows(image_path: str) -> None:
         )
 
         if result:
-            print(f"✅ Wallpaper set successfully!")
+            print("✅ Wallpaper set successfully!")
         else:
             raise RuntimeError("Failed to set wallpaper via WinAPI")
 
     except Exception as e:
-        raise RuntimeError(f"❌ Failed to set wallpaper on Windows: {e}")
+        raise RuntimeError(f"❌ Failed to set wallpaper on Windows: {e}") from e
 
 
 def set_wallpaper_macos(image_path: str) -> None:
@@ -139,6 +137,7 @@ def set_wallpaper_macos(image_path: str) -> None:
             capture_output=True,
             text=True,
             timeout=10,
+            check=False
         )
 
         if result.returncode == 0:
@@ -146,12 +145,12 @@ def set_wallpaper_macos(image_path: str) -> None:
         else:
             raise RuntimeError(result.stderr)
 
-    except subprocess.TimeoutExpired:
-        raise RuntimeError("❌ osascript command timed out")
-    except FileNotFoundError:
-        raise RuntimeError("❌ osascript not found. Please check your macOS installation.")
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError("❌ osascript command timed out") from exc
+    except FileNotFoundError as exc:
+        raise RuntimeError("❌ osascript not found. Please check your macOS installation.") from exc
     except Exception as e:
-        raise RuntimeError(f"❌ Failed to set wallpaper on macOS: {e}")
+        raise RuntimeError(f"❌ Failed to set wallpaper on macOS: {e}") from e
 
 
 def set_wallpaper_linux(image_path: str) -> None:
@@ -187,6 +186,7 @@ def set_wallpaper_linux(image_path: str) -> None:
                 ],
                 capture_output=True,
                 timeout=5,
+                check=False
             )
             subprocess.run(
                 [
@@ -197,10 +197,11 @@ def set_wallpaper_linux(image_path: str) -> None:
                 ],
                 capture_output=True,
                 timeout=5,
+                check=False
             )
             print("✅ Wallpaper set successfully!")
             return
-        except Exception:
+        except Exception: # pylint: disable=broad-exception-caught
             pass
 
     # Try feh (X11)

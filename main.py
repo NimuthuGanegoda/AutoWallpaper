@@ -82,7 +82,7 @@ def run_wallpaper_update(provider, category, mood, resolution):
         print(f"❌ Error during update: {e}")
 
 
-def main():
+def main(): # pylint: disable=too-many-statements
     """Main entry point for the application."""
     args = parse_args()
 
