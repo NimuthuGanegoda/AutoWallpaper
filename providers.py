@@ -16,7 +16,9 @@ import os
 import re
 import random
 from abc import ABC, abstractmethod
+# pylint: disable=import-error
 import requests
+# pylint: enable=import-error
 
 
 class ImageProvider(ABC):
