@@ -16,6 +16,7 @@ import os
 from abc import ABC, abstractmethod
 import requests
 import re
+import random
 
 
 class ImageProvider(ABC):
@@ -509,3 +510,171 @@ class PicsumProvider(ImageProvider):
             return response.content
         except requests.exceptions.RequestException as e:
              raise RuntimeError(f"❌ Failed to download from Picsum: {e}")
+
+
+class NasaApodProvider(ImageProvider):
+    """Image provider for NASA APOD."""
+
+    def __init__(self):
+        self.api_url = "https://api.nasa.gov/planetary/apod"
+        self.api_key = os.getenv("NASA_API_KEY", "DEMO_KEY")
+
+    def get_name(self) -> str:
+        return "NASA APOD"
+
+    def get_description(self) -> str:
+        return "Astronomy Picture of the Day"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        params = {"api_key": self.api_key}
+
+        if category.lower() == "random":
+             params["count"] = 1
+
+        try:
+            print(f"⏳ Downloading from NASA APOD ({category})...")
+            response = requests.get(self.api_url, params=params, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+
+            # If count is used, data is a list
+            if isinstance(data, list):
+                data = data[0]
+
+            if data.get("media_type") != "image":
+                 raise RuntimeError("❌ Selected APOD is not an image (it might be a video).")
+
+            image_url = data.get("hdurl") or data.get("url")
+
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+
+            print("✅ Download successful!")
+            return image_response.content
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to download from NASA APOD: {e}")
+
+
+class TheCatApiProvider(ImageProvider):
+    """Image provider for TheCatAPI."""
+
+    def __init__(self):
+        self.api_url = "https://api.thecatapi.com/v1/images/search"
+
+    def get_name(self) -> str:
+        return "TheCatAPI"
+
+    def get_description(self) -> str:
+        return "Random Cat Images"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        try:
+            print(f"⏳ Downloading from TheCatAPI...")
+            response = requests.get(self.api_url, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+            if not data:
+                raise RuntimeError("❌ No cat images found.")
+
+            image_url = data[0]["url"]
+
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+
+            print("✅ Download successful!")
+            return image_response.content
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to download from TheCatAPI: {e}")
+
+
+class TheDogApiProvider(ImageProvider):
+    """Image provider for TheDogAPI."""
+
+    def __init__(self):
+        self.api_url = "https://api.thedogapi.com/v1/images/search"
+
+    def get_name(self) -> str:
+        return "TheDogAPI"
+
+    def get_description(self) -> str:
+        return "Random Dog Images"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        try:
+            print(f"⏳ Downloading from TheDogAPI...")
+            response = requests.get(self.api_url, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+            if not data:
+                raise RuntimeError("❌ No dog images found.")
+
+            image_url = data[0]["url"]
+
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+
+            print("✅ Download successful!")
+            return image_response.content
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to download from TheDogAPI: {e}")
+
+
+class MetMuseumProvider(ImageProvider):
+    """Image provider for The Metropolitan Museum of Art."""
+
+    def __init__(self):
+        self.api_url = "https://collectionapi.metmuseum.org/public/collection/v1"
+
+    def get_name(self) -> str:
+        return "The Met"
+
+    def get_description(self) -> str:
+        return "Classic Art from The Met Museum"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        query = category
+        if category.lower() == "random":
+            query = "painting"
+
+        search_url = f"{self.api_url}/search"
+        params = {"q": query, "hasImages": "true"}
+
+        try:
+            print(f"⏳ Searching The Met for '{query}'...")
+            response = requests.get(search_url, params=params, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+            if not data.get("objectIDs"):
+                 raise RuntimeError(f"❌ No art found for '{query}'.")
+
+            object_ids = data["objectIDs"]
+
+            # Try up to 5 times to get an image
+            for _ in range(5):
+                object_id = random.choice(object_ids)
+                object_url = f"{self.api_url}/objects/{object_id}"
+
+                try:
+                    obj_resp = requests.get(object_url, timeout=10)
+                    obj_resp.raise_for_status()
+                    obj_data = obj_resp.json()
+
+                    image_url = obj_data.get("primaryImage")
+                    if image_url:
+                        print(f"⏳ Downloading '{obj_data.get('title')}'...")
+                        img_resp = requests.get(image_url, timeout=30)
+                        img_resp.raise_for_status()
+
+                        print("✅ Download successful!")
+                        return img_resp.content
+                except Exception:
+                    continue
+
+            raise RuntimeError("❌ Failed to find a valid image after multiple attempts.")
+
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to connect to The Met: {e}")
