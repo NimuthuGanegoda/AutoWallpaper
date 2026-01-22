@@ -1,6 +1,6 @@
 """Setup configuration for easy-wallpaper package."""
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages # pylint: disable=import-error, unused-import
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()

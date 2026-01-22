@@ -19,9 +19,9 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+# pylint: disable=wrong-import-position
 from config import (
     PROVIDERS,
-    DEFAULT_PROVIDER,
     DEFAULT_CATEGORY,
     DEFAULT_RESOLUTION
 )
@@ -32,6 +32,7 @@ from ui import (
     get_resolution,
 )
 from wallpaper import save_wallpaper, set_wallpaper
+# pylint: enable=wrong-import-position
 
 
 def parse_args():
@@ -61,23 +62,23 @@ def run_wallpaper_update(provider, category, mood, resolution):
     if mood:
         print(f"   Mood: {mood}")
     print(f"   Resolution: {resolution}")
-    
+
     try:
         # Set resolution if supported
         provider.set_resolution(resolution)
-        
+
         # Download
         image_data = provider.download_image(category, mood)
-        
+
         # Save
         wallpaper_path = save_wallpaper(image_data)
-        
+
         # Set
         set_wallpaper(wallpaper_path)
-        
+
         print("✅ Wallpaper updated successfully!")
-        
-    except Exception as e:
+
+    except Exception as e: # pylint: disable=broad-exception-caught
         print(f"❌ Error during update: {e}")
 
 
@@ -107,13 +108,9 @@ def main():
 
         else:
             # Interactive mode
-            # Only run interactive selection if we are NOT in a loop with defaults?
-            # Actually, if no args provided, we want interactive.
-            # If --loop is provided but no provider, we should probably ask interactively once, then loop.
-
             print("\nDownload and set beautiful wallpapers effortlessly!")
 
-            provider_key, provider = get_provider()
+            provider_key, provider = get_provider() # pylint: disable=unused-variable
             category = get_category(provider.get_name())
             print(f"✅ Selected category: {category}")
 
@@ -123,11 +120,11 @@ def main():
 
             resolution = get_resolution()
             print(f"✅ Selected resolution: {resolution}")
-        
-        
+
+
         # Run the update
         run_wallpaper_update(provider, category, mood, resolution)
-        
+
         # Handle loop
         if args.loop:
             interval_seconds = args.loop * 60
@@ -141,20 +138,20 @@ def main():
                 except KeyboardInterrupt:
                     print("\n🛑 Loop stopped by user.")
                     break
-        
+
         elif not args.provider:
-             # Only show success summary if interactive and not looping
-             print("\n" + "=" * 50)
-             print("✨ SUCCESS!")
-             print("=" * 50)
-             print(f"Your new wallpaper has been set successfully!")
-             print(f"Provider: {provider.get_name()}")
-             print("=" * 50 + "\n")
+            # Only show success summary if interactive and not looping
+            print("\n" + "=" * 50)
+            print("✨ SUCCESS!")
+            print("=" * 50)
+            print("Your new wallpaper has been set successfully!")
+            print(f"Provider: {provider.get_name()}")
+            print("=" * 50 + "\n")
 
     except KeyboardInterrupt:
         print("\n\n❌ Operation cancelled by user.")
         sys.exit(0)
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-exception-caught
         print(f"\n❌ Unexpected error: {e}\n")
         sys.exit(1)
 

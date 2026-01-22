@@ -16,14 +16,14 @@ from pathlib import Path
 def save_wallpaper(image_data: bytes, filename: str = "wallpaper.png") -> str:
     """
     Save downloaded image to wallpaper directory.
-    
+
     Args:
         image_data: The image file content as bytes
         filename: Name to save the file as (default: wallpaper.png)
-    
+
     Returns:
         str: Path to the saved wallpaper file
-    
+
     Raises:
         RuntimeError: If save operation fails
     """
@@ -34,10 +34,10 @@ def save_wallpaper(image_data: bytes, filename: str = "wallpaper.png") -> str:
         wallpaper_dir = Path.home() / ".easy-wallpaper"
     else:  # Linux
         wallpaper_dir = Path.home() / ".easy-wallpaper"
-    
+
     # Create directory if it doesn't exist
     wallpaper_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Save the file
     file_path = wallpaper_dir / filename
     try:
@@ -52,16 +52,16 @@ def save_wallpaper(image_data: bytes, filename: str = "wallpaper.png") -> str:
 def set_wallpaper(image_path: str) -> None:
     """
     Set the wallpaper for the current operating system.
-    
+
     Args:
         image_path: Path to the image file
-    
+
     Raises:
         RuntimeError: If setting wallpaper fails
         NotImplementedError: If OS is not supported
     """
     system = platform.system()
-    
+
     if system == "Windows":
         set_wallpaper_windows(image_path)
     elif system == "Darwin":
@@ -75,39 +75,39 @@ def set_wallpaper(image_path: str) -> None:
 def set_wallpaper_windows(image_path: str) -> None:
     """
     Set wallpaper on Windows using ctypes and WinAPI.
-    
+
     Args:
         image_path: Path to the image file
-    
+
     Raises:
         RuntimeError: If operation fails
     """
     import ctypes
     from ctypes import wintypes
-    
+
     try:
         # Get absolute path
         abs_path = os.path.abspath(image_path)
-        
+
         # Use Windows API to set wallpaper
         user32 = ctypes.windll.user32
-        
+
         # SPI_SETDESKWALLPAPER = 20
         result = ctypes.windll.kernel32.SetEnvironmentVariableW(
             "WALLPAPER_PATH", abs_path
         )
-        
+
         # Alternative method using SystemParametersInfo
         SPI_SETDESKWALLPAPER = 20
         result = user32.SystemParametersInfoW(
             SPI_SETDESKWALLPAPER, 0, abs_path, 3
         )
-        
+
         if result:
             print(f"✅ Wallpaper set successfully!")
         else:
             raise RuntimeError("Failed to set wallpaper via WinAPI")
-    
+
     except Exception as e:
         raise RuntimeError(f"❌ Failed to set wallpaper on Windows: {e}")
 
@@ -115,16 +115,16 @@ def set_wallpaper_windows(image_path: str) -> None:
 def set_wallpaper_macos(image_path: str) -> None:
     """
     Set wallpaper on macOS using osascript (AppleScript).
-    
+
     Args:
         image_path: Path to the image file
-    
+
     Raises:
         RuntimeError: If operation fails
     """
     try:
         abs_path = os.path.abspath(image_path)
-        
+
         # AppleScript to set wallpaper
         script = f"""
             tell application "System Events"
@@ -133,19 +133,19 @@ def set_wallpaper_macos(image_path: str) -> None:
                 end tell
             end tell
         """
-        
+
         result = subprocess.run(
             ["osascript", "-e", script],
             capture_output=True,
             text=True,
             timeout=10,
         )
-        
+
         if result.returncode == 0:
             print("✅ Wallpaper set successfully!")
         else:
             raise RuntimeError(result.stderr)
-    
+
     except subprocess.TimeoutExpired:
         raise RuntimeError("❌ osascript command timed out")
     except FileNotFoundError:
@@ -157,23 +157,23 @@ def set_wallpaper_macos(image_path: str) -> None:
 def set_wallpaper_linux(image_path: str) -> None:
     """
     Set wallpaper on Linux using available tools (dconf, feh, or pcmanfm).
-    
+
     Tries multiple methods:
     1. dconf (GNOME, Cinnamon)
     2. feh (standalone X11)
     3. pcmanfm (XFCE, LXde)
-    
+
     Args:
         image_path: Path to the image file
-    
+
     Raises:
         RuntimeError: If all methods fail
     """
     abs_path = os.path.abspath(image_path)
-    
+
     # Detect desktop environment
     desktop_env = os.getenv("XDG_CURRENT_DESKTOP", "").lower()
-    
+
     # Try dconf (GNOME, Cinnamon)
     if "gnome" in desktop_env or "cinnamon" in desktop_env:
         try:
@@ -202,7 +202,7 @@ def set_wallpaper_linux(image_path: str) -> None:
             return
         except Exception:
             pass
-    
+
     # Try feh (X11)
     try:
         subprocess.run(
@@ -215,7 +215,7 @@ def set_wallpaper_linux(image_path: str) -> None:
         return
     except (FileNotFoundError, subprocess.CalledProcessError):
         pass
-    
+
     # Try pcmanfm-desktop (XFCE, LXDe)
     try:
         subprocess.run(
@@ -228,7 +228,7 @@ def set_wallpaper_linux(image_path: str) -> None:
         return
     except (FileNotFoundError, subprocess.CalledProcessError):
         pass
-    
+
     # Try nitrogen (another common X11 wallpaper setter)
     try:
         subprocess.run(
@@ -241,7 +241,7 @@ def set_wallpaper_linux(image_path: str) -> None:
         return
     except (FileNotFoundError, subprocess.CalledProcessError):
         pass
-    
+
     raise RuntimeError(
         f"❌ Failed to set wallpaper on Linux.\n"
         f"Please install one of: dconf, feh, pcmanfm-desktop, or nitrogen\n"
