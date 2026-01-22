@@ -18,6 +18,11 @@ from wallpaper import save_wallpaper, set_wallpaper
 class AutoWallpaperGUI:
     """Main GUI window for AutoWallpaper application."""
 
+    # GUI Components (to avoid too many attributes warning in Pylint)
+    # We can store them in a dict if needed, or disable the warning.
+    # Disabling warning is cleaner for typical Tkinter apps.
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, root: tk.Tk):
         """
         Initialize the GUI.
@@ -33,11 +38,6 @@ class AutoWallpaperGUI:
         # Current selected provider
         self.current_provider: Optional[ImageProvider] = None
         self.downloading = False
-
-        # GUI Components (to avoid too many attributes warning in Pylint)
-        # We can store them in a dict if needed, or disable the warning.
-        # Disabling warning is cleaner for typical Tkinter apps.
-        # pylint: disable=too-many-instance-attributes
 
         # Configure style
         self.style = ttk.Style()
