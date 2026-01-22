@@ -25,12 +25,10 @@ class ImageProvider(ABC):
     @abstractmethod
     def get_name(self) -> str:
         """Return the provider's display name."""
-        pass
 
     @abstractmethod
     def get_description(self) -> str:
         """Return a brief description of the provider."""
-        pass
 
     @abstractmethod
     def download_image(self, category: str, mood: str = "") -> bytes:
@@ -47,7 +45,6 @@ class ImageProvider(ABC):
         Raises:
             RuntimeError: If download fails
         """
-        pass
 
     def set_resolution(self, resolution: str):
         """
@@ -57,7 +54,6 @@ class ImageProvider(ABC):
         Args:
             resolution: Resolution string (e.g., '1920x1080')
         """
-        pass
 
 
 class PexelsProvider(ImageProvider):
@@ -112,9 +108,9 @@ class PexelsProvider(ImageProvider):
             return image_response.content
 
         except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"❌ Failed to download from Pexels: {e}")
-        except KeyError:
-            raise RuntimeError("❌ Unexpected Pexels API response format.")
+            raise RuntimeError(f"❌ Failed to download from Pexels: {e}") from e
+        except KeyError as exc:
+            raise RuntimeError("❌ Unexpected Pexels API response format.") from exc
 
 
 class PixabayProvider(ImageProvider):
@@ -169,9 +165,9 @@ class PixabayProvider(ImageProvider):
             return image_response.content
 
         except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"❌ Failed to download from Pixabay: {e}")
-        except KeyError:
-            raise RuntimeError("❌ Unexpected Pixabay API response format.")
+            raise RuntimeError(f"❌ Failed to download from Pixabay: {e}") from e
+        except KeyError as exc:
+            raise RuntimeError("❌ Unexpected Pixabay API response format.") from exc
 
 
 class WaifuImProvider(ImageProvider):
@@ -215,9 +211,9 @@ class WaifuImProvider(ImageProvider):
             return image_response.content
 
         except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"❌ Failed to download from waifu.im: {e}")
-        except KeyError:
-            raise RuntimeError("❌ Unexpected waifu.im API response format.")
+            raise RuntimeError(f"❌ Failed to download from waifu.im: {e}") from e
+        except KeyError as exc:
+            raise RuntimeError("❌ Unexpected waifu.im API response format.") from exc
 
     @staticmethod
     def _map_category_to_tags(category: str) -> list:
@@ -240,9 +236,9 @@ class WaifuImProvider(ImageProvider):
         if category_lower in tag_map:
             return tag_map[category_lower]
 
-        for key in tag_map:
+        for key, value in tag_map.items():
             if key in category_lower:
-                return tag_map[key]
+                return value
 
         return ["waifu"]
 
@@ -286,9 +282,9 @@ class CatgirlProvider(ImageProvider):
             return image_response.content
 
         except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"❌ Failed to download from nekos.moe: {e}")
-        except KeyError:
-            raise RuntimeError("❌ Unexpected nekos.moe API response format.")
+            raise RuntimeError(f"❌ Failed to download from nekos.moe: {e}") from e
+        except KeyError as exc:
+            raise RuntimeError("❌ Unexpected nekos.moe API response format.") from exc
 
     @staticmethod
     def _map_category_to_nsfw(category: str) -> str | None:
@@ -361,7 +357,7 @@ class UnsplashProvider(ImageProvider):
             print("✅ Download successful!")
             return image_response.content
         except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"❌ Failed to download from Unsplash: {e}")
+            raise RuntimeError(f"❌ Failed to download from Unsplash: {e}") from e
 
 
 class WallhavenProvider(ImageProvider):
@@ -412,7 +408,7 @@ class WallhavenProvider(ImageProvider):
             print("✅ Download successful!")
             return image_response.content
         except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"❌ Failed to download from Wallhaven: {e}")
+            raise RuntimeError(f"❌ Failed to download from Wallhaven: {e}") from e
 
 
 class BingProvider(ImageProvider):
@@ -438,11 +434,10 @@ class BingProvider(ImageProvider):
                 match = re.search(r"(\d+)", cat_lower)
                 if match:
                     idx = int(match.group(1))
-            except Exception:
+            except ValueError:
                 idx = 0
 
-        if idx > 7:
-            idx = 7
+        idx = min(idx, 7)
 
         params = {
             "format": "js",
@@ -469,7 +464,7 @@ class BingProvider(ImageProvider):
             print("✅ Download successful!")
             return image_response.content
         except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"❌ Failed to download from Bing: {e}")
+            raise RuntimeError(f"❌ Failed to download from Bing: {e}") from e
 
 
 class PicsumProvider(ImageProvider):
@@ -515,7 +510,7 @@ class PicsumProvider(ImageProvider):
             print("✅ Download successful!")
             return response.content
         except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"❌ Failed to download from Picsum: {e}")
+            raise RuntimeError(f"❌ Failed to download from Picsum: {e}") from e
 
 
 class NasaApodProvider(ImageProvider):
@@ -677,7 +672,7 @@ class MetMuseumProvider(ImageProvider):
 
                         print("✅ Download successful!")
                         return response.content
-                except Exception:
+                except requests.exceptions.RequestException:
                     continue
 
             raise RuntimeError("❌ Failed to find a valid image after multiple attempts.")
