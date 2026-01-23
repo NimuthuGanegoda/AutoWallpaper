@@ -243,12 +243,15 @@ class AutoWallpaperGUI:
             random_mood = random.choice(moods)
             self.mood_var.set(random_mood)
 
-    def update_preview(self, image_path: str):
+    def _resize_image_for_preview(self, image_path: str) -> Optional[Image.Image]:
         """
-        Update the preview label with the downloaded image.
+        Resize image for preview in background thread.
 
         Args:
-            image_path: Path to the image file.
+            image_path: Path to image file
+
+        Returns:
+            Resized PIL Image or None on error
         """
         try:
             img = Image.open(image_path)
@@ -270,13 +273,20 @@ class AutoWallpaperGUI:
                 new_height = display_height
                 new_width = int(display_height * img_ratio)
 
-            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            self.tk_image = ImageTk.PhotoImage(img)
-
-            self.preview_label.config(image=self.tk_image, text="")
+            return img.resize((new_width, new_height), Image.Resampling.LANCZOS)
         except Exception as e:
-            print(f"Error loading preview: {e}")
-            self.preview_label.config(text="Error loading preview", image="")
+            print(f"Error resizing preview: {e}")
+            return None
+
+    def _set_preview_image(self, img: Image.Image):
+        """
+        Set the preview image on the main thread.
+
+        Args:
+            img: PIL Image object
+        """
+        self.tk_image = ImageTk.PhotoImage(img)
+        self.preview_label.config(image=self.tk_image, text="")
 
     def on_download(self):
         """Handle download button click."""
@@ -339,8 +349,14 @@ class AutoWallpaperGUI:
             # Set wallpaper
             set_wallpaper(path)
             
-            # Update preview
-            self.root.after(0, lambda: self.update_preview(path))
+            # Resize image in background thread
+            resized_img = self._resize_image_for_preview(path)
+
+            # Update preview on main thread
+            if resized_img:
+                self.root.after(0, lambda: self._set_preview_image(resized_img))
+            else:
+                self.root.after(0, lambda: self.preview_label.config(text="Error loading preview", image=""))
 
             # Success!
             self.root.after(
