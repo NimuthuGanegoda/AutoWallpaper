@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 import requests
 import re
 import random
+import concurrent.futures
 
 
 class ImageProvider(ABC):
@@ -653,28 +654,34 @@ class MetMuseumProvider(ImageProvider):
             if not object_ids:
                 raise RuntimeError(f"❌ No objects found for '{query}' at The Met.")
 
-            # Try up to 5 times to find an object with a valid image
-            for _ in range(5):
-                object_id = random.choice(object_ids)
-
+            # Try up to 5 objects in parallel to find one with a valid image
+            def check_object(obj_id):
                 try:
-                    obj_resp = requests.get(f"{self.object_url}/{object_id}", timeout=10)
-                    obj_resp.raise_for_status()
-                    obj_data = obj_resp.json()
-
-                    image_url = obj_data.get("primaryImage")
-                    if not image_url:
-                        continue
-
-                    print(f"⏳ Downloading art: {obj_data.get('title', 'Unknown')}...")
-                    image_response = requests.get(image_url, timeout=15)
-                    image_response.raise_for_status()
-
-                    print("✅ Download successful!")
-                    return image_response.content
-
+                    resp = requests.get(f"{self.object_url}/{obj_id}", timeout=10)
+                    resp.raise_for_status()
+                    return resp.json()
                 except Exception:
-                    continue
+                    return None
+
+            # Select up to 5 unique random IDs
+            selected_ids = random.sample(object_ids, min(len(object_ids), 5))
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                future_to_id = {executor.submit(check_object, obj_id): obj_id for obj_id in selected_ids}
+
+                for future in concurrent.futures.as_completed(future_to_id):
+                    obj_data = future.result()
+                    if obj_data and obj_data.get("primaryImage"):
+                        image_url = obj_data.get("primaryImage")
+                        print(f"⏳ Downloading art: {obj_data.get('title', 'Unknown')}...")
+
+                        try:
+                            image_response = requests.get(image_url, timeout=15)
+                            image_response.raise_for_status()
+                            print("✅ Download successful!")
+                            return image_response.content
+                        except Exception:
+                            continue
 
             raise RuntimeError("❌ Failed to find a valid image after multiple attempts.")
 
