@@ -142,13 +142,22 @@ class PexelsProvider(ImageProvider):
                 "\nAlternatively, use waifu.im (option 3) which requires no API key!"
             )
         
-        params = {"query": query, "per_page": 1}
+        # Randomize page to ensure variety in loops
+        page = random.randint(1, 10)
+        params = {"query": query, "per_page": 1, "page": page}
         
-        print(f"⏳ Downloading from Pexels ({query})...")
+        print(f"⏳ Downloading from Pexels ({query}, page {page})...")
         data = self._fetch_json(self.api_url, params=params, headers=headers)
 
         if not data.get("photos"):
-            raise RuntimeError(f"❌ No images found for '{query}' on Pexels.")
+            # Fallback to page 1
+            if page != 1:
+                print("   No results on random page, trying page 1...")
+                params["page"] = 1
+                data = self._fetch_json(self.api_url, params=params, headers=headers)
+
+            if not data.get("photos"):
+                raise RuntimeError(f"❌ No images found for '{query}' on Pexels.")
 
         try:
             photo = data["photos"][0]
@@ -186,21 +195,31 @@ class PixabayProvider(ImageProvider):
         if mood:
             query = f"{category} {mood}"
         
+        # Randomize page to ensure variety in loops
+        page = random.randint(1, 10)
         params = {
             "key": self.api_key,
             "q": query,
-            "per_page": 1,
+            "per_page": 3,
+            "page": page,
             "image_type": "photo",
         }
         
-        print(f"⏳ Downloading from Pixabay ({query})...")
+        print(f"⏳ Downloading from Pixabay ({query}, page {page})...")
         data = self._fetch_json(self.api_url, params=params)
 
         if not data.get("hits"):
-            raise RuntimeError(f"❌ No images found for '{query}' on Pixabay.")
+            # Fallback to page 1
+            if page != 1:
+                print("   No results on random page, trying page 1...")
+                params["page"] = 1
+                data = self._fetch_json(self.api_url, params=params)
+
+            if not data.get("hits"):
+                raise RuntimeError(f"❌ No images found for '{query}' on Pixabay.")
 
         try:
-            image_data = data["hits"][0]
+            image_data = random.choice(data["hits"])
             image_url = image_data.get("largeImageURL") or image_data.get("webformatURL")
         except (KeyError, IndexError):
              raise RuntimeError("❌ Unexpected Pixabay API response format.")
@@ -698,3 +717,109 @@ class MetMuseumProvider(ImageProvider):
                     return self._download_bytes(image_url)
 
         raise RuntimeError("❌ Failed to find a valid image after parallel checks.")
+
+
+class WikimediaCommonsProvider(ImageProvider):
+    """Image provider for Wikimedia Commons."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://commons.wikimedia.org/w/api.php"
+        # Set User-Agent for all requests (API and image download)
+        self.session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        })
+
+    def get_name(self) -> str:
+        return "Wikimedia Commons"
+
+    def get_description(self) -> str:
+        return "Massive media repository (Creative Commons)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        query = category
+        if mood:
+            query = f"{category} {mood}"
+
+        # Search for images in 'File' namespace (6)
+        params = {
+            "action": "query",
+            "generator": "search",
+            "gsrsearch": query,
+            "gsrnamespace": 6,  # File namespace
+            "gsrlimit": 20,     # Fetch 20 results
+            "prop": "imageinfo",
+            "iiprop": "url",
+            "format": "json"
+        }
+
+        print(f"⏳ Searching Wikimedia Commons ({query})...")
+        data = self._fetch_json(self.api_url, params=params)
+
+        pages = data.get("query", {}).get("pages", {})
+        if not pages:
+             raise RuntimeError(f"❌ No images found for '{query}' on Wikimedia Commons.")
+
+        # Filter pages that have imageinfo and url, and are valid image types
+        valid_pages = []
+        valid_extensions = (".jpg", ".jpeg", ".png", ".webp")
+        for page in pages.values():
+            if "imageinfo" in page and page["imageinfo"]:
+                image_info = page["imageinfo"][0]
+                if "url" in image_info:
+                    url = image_info["url"]
+                    if url.lower().endswith(valid_extensions):
+                        valid_pages.append(page)
+
+        if not valid_pages:
+             raise RuntimeError(f"❌ No valid images (jpg/png/webp) found for '{query}'.")
+
+        # Pick a random one
+        chosen = random.choice(valid_pages)
+        image_url = chosen["imageinfo"][0]["url"]
+        title = chosen.get("title", "Unknown")
+        print(f"   Selected: {title}")
+
+        return self._download_bytes(image_url)
+
+
+class LoremFlickrProvider(ImageProvider):
+    """Image provider for Lorem Flickr."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://loremflickr.com"
+        self.width = 1920
+        self.height = 1080
+
+    def get_name(self) -> str:
+        return "Lorem Flickr"
+
+    def get_description(self) -> str:
+        return "Random photos by keyword (Simple & Fast)"
+
+    def set_resolution(self, resolution: str):
+        try:
+            if "x" in resolution:
+                parts = resolution.lower().split("x")
+                if len(parts) >= 2:
+                    self.width = int(parts[0])
+                    self.height = int(parts[1])
+        except ValueError:
+            pass
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Construct URL: https://loremflickr.com/{width}/{height}/{keywords}
+        keywords = category
+        if mood:
+            keywords = f"{category},{mood}"
+
+        # Replace spaces with commas or let URL encoding handle it?
+        # LoremFlickr uses commas for multiple keywords
+        keywords = keywords.replace(" ", ",")
+
+        url = f"{self.base_url}/{self.width}/{self.height}/{keywords}"
+
+        # Note: LoremFlickr redirects to the actual image.
+        # requests.get follows redirects by default.
+        return self._download_bytes(url)

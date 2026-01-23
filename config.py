@@ -17,6 +17,8 @@ from providers import (
     TheCatApiProvider,
     TheDogApiProvider,
     MetMuseumProvider,
+    WikimediaCommonsProvider,
+    LoremFlickrProvider,
 )
 
 # Provider mapping
@@ -33,6 +35,8 @@ PROVIDERS = {
     "10": TheCatApiProvider(),
     "11": TheDogApiProvider(),
     "12": MetMuseumProvider(),
+    "13": WikimediaCommonsProvider(),
+    "14": LoremFlickrProvider(),
 }
 
 # Categories for each provider
@@ -129,6 +133,26 @@ CATEGORIES = {
         "islamic art",
         "modern art",
     ],
+    "Wikimedia Commons": [
+        "nature",
+        "landscape",
+        "space",
+        "architecture",
+        "animals",
+        "city",
+        "historical",
+        "painting",
+    ],
+    "Lorem Flickr": [
+        "kitten",
+        "puppy",
+        "paris",
+        "brazil",
+        "nature",
+        "city",
+        "food",
+        "car",
+    ],
 }
 
 # Moods for filtering
@@ -145,6 +169,8 @@ MOODS = {
     "TheCatAPI": [""],
     "TheDogAPI": [""],
     "The Met": [""],
+    "Wikimedia Commons": [""],
+    "Lorem Flickr": [""],
 }
 
 # Resolution options
