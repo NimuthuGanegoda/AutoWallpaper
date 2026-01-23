@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 import requests
 import re
 import random
+import math
 
 
 class ImageProvider(ABC):
@@ -321,12 +322,28 @@ class UnsplashProvider(ImageProvider):
     def __init__(self):
         self.api_url = "https://api.unsplash.com/photos/random"
         self.api_key = os.getenv("UNSPLASH_ACCESS_KEY", "")
+        self.orientation = "landscape"
 
     def get_name(self) -> str:
         return "Unsplash"
 
     def get_description(self) -> str:
         return "Professional photos (requires Access Key, 50 req/hour)"
+
+    def set_resolution(self, resolution: str):
+        try:
+            if "x" in resolution:
+                parts = resolution.lower().split("x")
+                if len(parts) >= 2:
+                    width, height = int(parts[0]), int(parts[1])
+                    if width > height:
+                        self.orientation = "landscape"
+                    elif height > width:
+                        self.orientation = "portrait"
+                    else:
+                        self.orientation = "squarish"
+        except ValueError:
+            pass
 
     def download_image(self, category: str, mood: str = "") -> bytes:
         if not self.api_key:
@@ -340,7 +357,7 @@ class UnsplashProvider(ImageProvider):
         if mood:
             query = f"{category} {mood}"
 
-        params = {"orientation": "landscape", "client_id": self.api_key}
+        params = {"orientation": self.orientation, "client_id": self.api_key}
         if query and query.lower() != "random":
              params["query"] = query
 
@@ -370,12 +387,26 @@ class WallhavenProvider(ImageProvider):
     def __init__(self):
         self.api_url = "https://wallhaven.cc/api/v1/search"
         self.api_key = os.getenv("WALLHAVEN_API_KEY", "")
+        self.ratios = ""
 
     def get_name(self) -> str:
         return "Wallhaven"
 
     def get_description(self) -> str:
         return "Anime & General wallpapers (API key optional)"
+
+    def set_resolution(self, resolution: str):
+        try:
+            if "x" in resolution:
+                parts = resolution.lower().split("x")
+                if len(parts) >= 2:
+                    width, height = int(parts[0]), int(parts[1])
+                    gcd_val = math.gcd(width, height)
+                    w_ratio = width // gcd_val
+                    h_ratio = height // gcd_val
+                    self.ratios = f"{w_ratio}x{h_ratio}"
+        except ValueError:
+            pass
 
     def download_image(self, category: str, mood: str = "") -> bytes:
         query = category
@@ -387,6 +418,9 @@ class WallhavenProvider(ImageProvider):
             "sorting": "random",
             "purity": "100", # SFW
         }
+        if self.ratios:
+            params["ratios"] = self.ratios
+
         if self.api_key:
             params["apikey"] = self.api_key
 
