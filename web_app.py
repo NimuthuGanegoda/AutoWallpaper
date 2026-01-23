@@ -1,5 +1,17 @@
 import streamlit as st
 import os
+import sys
+
+# Check if running in a browser environment (Pyodide)
+IS_WEB = "pyodide" in sys.modules
+
+if IS_WEB:
+    try:
+        import pyodide_http
+        pyodide_http.patch_all()
+    except ImportError:
+        pass
+
 from config import PROVIDERS, CATEGORIES, MOODS, RESOLUTIONS
 import wallpaper
 
@@ -72,23 +84,37 @@ with col1:
 with col2:
     st.subheader("Actions")
     if st.session_state.current_image:
-        if st.button("🖥️ Set as Wallpaper"):
-            try:
-                with st.spinner("Setting wallpaper..."):
-                    # Save first
-                    filename = f"wallpaper_{selected_provider_name}_{category}_{mood}.png".replace(" ", "_").replace("__", "_")
-                    path = wallpaper.save_wallpaper(st.session_state.current_image, filename)
-                    st.session_state.current_image_path = path
+        # Generate a filename
+        filename = f"wallpaper_{selected_provider_name}_{category}_{mood}.png".replace(" ", "_").replace("__", "_")
 
-                    # Set wallpaper
-                    wallpaper.set_wallpaper(path)
-                    st.balloons()
-                    st.success(f"Wallpaper set successfully!")
-            except Exception as e:
-                st.error(f"Failed to set wallpaper: {e}")
+        # Download button (works in browser and desktop)
+        st.download_button(
+            label="💾 Download Image",
+            data=st.session_state.current_image,
+            file_name=filename,
+            mime="image/png"
+        )
 
-        if st.session_state.current_image_path:
-             st.info(f"Saved to: `{st.session_state.current_image_path}`")
+        # Set as wallpaper button (Desktop only)
+        if not IS_WEB:
+            if st.button("🖥️ Set as Wallpaper"):
+                try:
+                    with st.spinner("Setting wallpaper..."):
+                        # Save first
+                        path = wallpaper.save_wallpaper(st.session_state.current_image, filename)
+                        st.session_state.current_image_path = path
+
+                        # Set wallpaper
+                        wallpaper.set_wallpaper(path)
+                        st.balloons()
+                        st.success(f"Wallpaper set successfully!")
+                except Exception as e:
+                    st.error(f"Failed to set wallpaper: {e}")
+
+            if st.session_state.current_image_path:
+                st.info(f"Saved to: `{st.session_state.current_image_path}`")
+        else:
+            st.info("ℹ️ 'Set as Wallpaper' is not available in the web version. Please download the image and set it manually.")
 
     st.markdown("---")
     st.markdown("#### API Keys")
