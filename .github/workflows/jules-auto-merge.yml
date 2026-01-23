@@ -1,0 +1,28 @@
+name: Auto-merge Jules
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  approve-and-merge:
+    runs-on: ubuntu-latest
+    if: contains(github.head_ref, 'jules')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Auto-merge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          # 1. Force the PR to be "Ready for Review" (removes Draft status)
+          gh pr ready "$PR_URL"
+          
+          # 2. Merge it
+          gh pr merge "$PR_URL" --auto --squash --delete-branch
