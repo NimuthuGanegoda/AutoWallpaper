@@ -93,11 +93,8 @@ def set_wallpaper_windows(image_path: str) -> None:
         user32 = ctypes.windll.user32
         
         # SPI_SETDESKWALLPAPER = 20
-        result = ctypes.windll.kernel32.SetEnvironmentVariableW(
-            "WALLPAPER_PATH", abs_path
-        )
-        
-        # Alternative method using SystemParametersInfo
+        # SPIF_UPDATEINIFILE = 0x01
+        # SPIF_SENDWININICHANGE = 0x02
         SPI_SETDESKWALLPAPER = 20
         result = user32.SystemParametersInfoW(
             SPI_SETDESKWALLPAPER, 0, abs_path, 3
