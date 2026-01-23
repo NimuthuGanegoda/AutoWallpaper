@@ -4,7 +4,7 @@ from providers import UnsplashProvider, WallhavenProvider
 
 class TestProviders(unittest.TestCase):
 
-    @patch('providers.requests.get')
+    @patch('requests.Session.get')
     def test_unsplash_orientation(self, mock_get):
         # Setup mock
         mock_response = MagicMock()
@@ -38,7 +38,7 @@ class TestProviders(unittest.TestCase):
         params = kwargs['params']
         self.assertEqual(params['orientation'], 'squarish')
 
-    @patch('providers.requests.get')
+    @patch('requests.Session.get')
     def test_wallhaven_ratios(self, mock_get):
         # Setup mock
         mock_response = MagicMock()
