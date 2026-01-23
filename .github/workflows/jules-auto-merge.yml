@@ -11,7 +11,7 @@ permissions:
 jobs:
   approve-and-merge:
     runs-on: ubuntu-latest
-    # I REMOVED THE 'if:' LINE SO IT RUNS ON EVERYTHING
+    # I REMOVED THE 'if:' LINE BELOW. NOW IT RUNS ON EVERYTHING.
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -21,8 +21,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          # 1. Force PR to be ready (removes Draft)
           gh pr ready "$PR_URL" || true
-          
-          # 2. Merge immediately (using --admin if possible, otherwise standard merge)
           gh pr merge "$PR_URL" --squash --delete-branch
