@@ -16,6 +16,7 @@ import os
 from abc import ABC, abstractmethod
 import requests
 import re
+import random
 
 
 class ImageProvider(ABC):
@@ -509,3 +510,173 @@ class PicsumProvider(ImageProvider):
             return response.content
         except requests.exceptions.RequestException as e:
              raise RuntimeError(f"❌ Failed to download from Picsum: {e}")
+
+
+class NasaApodProvider(ImageProvider):
+    """Image provider for NASA Astronomy Picture of the Day."""
+
+    def __init__(self):
+        self.api_url = "https://api.nasa.gov/planetary/apod"
+        self.api_key = os.getenv("NASA_API_KEY", "DEMO_KEY")
+
+    def get_name(self) -> str:
+        return "NASA APOD"
+
+    def get_description(self) -> str:
+        return "Astronomy Picture of the Day (Space images)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        params = {"api_key": self.api_key}
+
+        if category.lower() == "random":
+            params["count"] = 1
+
+        try:
+            print(f"⏳ Downloading from NASA APOD ({category})...")
+            response = requests.get(self.api_url, params=params, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+
+            # Handle list response (random) vs dict response (today)
+            if isinstance(data, list):
+                if not data:
+                    raise RuntimeError("❌ No images returned from NASA API.")
+                image_data = data[0]
+            else:
+                image_data = data
+
+            image_url = image_data.get("hdurl") or image_data.get("url")
+            if not image_url:
+                 raise RuntimeError("❌ No image URL found in NASA response.")
+
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+
+            print("✅ Download successful!")
+            return image_response.content
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to download from NASA APOD: {e}")
+
+
+class TheCatApiProvider(ImageProvider):
+    """Image provider for TheCatAPI."""
+
+    def __init__(self):
+        self.api_url = "https://api.thecatapi.com/v1/images/search"
+
+    def get_name(self) -> str:
+        return "TheCatAPI"
+
+    def get_description(self) -> str:
+        return "Random cat images"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        try:
+            print(f"⏳ Downloading from TheCatAPI...")
+            response = requests.get(self.api_url, params={"limit": 1}, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+            if not data:
+                raise RuntimeError("❌ No images returned from TheCatAPI.")
+
+            image_url = data[0]["url"]
+
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+
+            print("✅ Download successful!")
+            return image_response.content
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to download from TheCatAPI: {e}")
+
+
+class TheDogApiProvider(ImageProvider):
+    """Image provider for TheDogAPI."""
+
+    def __init__(self):
+        self.api_url = "https://api.thedogapi.com/v1/images/search"
+
+    def get_name(self) -> str:
+        return "TheDogAPI"
+
+    def get_description(self) -> str:
+        return "Random dog images"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        try:
+            print(f"⏳ Downloading from TheDogAPI...")
+            response = requests.get(self.api_url, params={"limit": 1}, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+            if not data:
+                raise RuntimeError("❌ No images returned from TheDogAPI.")
+
+            image_url = data[0]["url"]
+
+            image_response = requests.get(image_url, timeout=15)
+            image_response.raise_for_status()
+
+            print("✅ Download successful!")
+            return image_response.content
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to download from TheDogAPI: {e}")
+
+
+class MetMuseumProvider(ImageProvider):
+    """Image provider for The Metropolitan Museum of Art."""
+
+    def __init__(self):
+        self.search_url = "https://collectionapi.metmuseum.org/public/collection/v1/search"
+        self.object_url = "https://collectionapi.metmuseum.org/public/collection/v1/objects"
+
+    def get_name(self) -> str:
+        return "The Met"
+
+    def get_description(self) -> str:
+        return "Classic art from The Metropolitan Museum of Art"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        query = category if category.lower() != "random" else "painting"
+
+        try:
+            print(f"⏳ Searching The Met ({query})...")
+            search_params = {"q": query, "hasImages": "true"}
+            response = requests.get(self.search_url, params=search_params, timeout=15)
+            response.raise_for_status()
+
+            data = response.json()
+            object_ids = data.get("objectIDs", [])
+
+            if not object_ids:
+                raise RuntimeError(f"❌ No objects found for '{query}' at The Met.")
+
+            # Try up to 5 times to find an object with a valid image
+            for _ in range(5):
+                object_id = random.choice(object_ids)
+
+                try:
+                    obj_resp = requests.get(f"{self.object_url}/{object_id}", timeout=10)
+                    obj_resp.raise_for_status()
+                    obj_data = obj_resp.json()
+
+                    image_url = obj_data.get("primaryImage")
+                    if not image_url:
+                        continue
+
+                    print(f"⏳ Downloading art: {obj_data.get('title', 'Unknown')}...")
+                    image_response = requests.get(image_url, timeout=15)
+                    image_response.raise_for_status()
+
+                    print("✅ Download successful!")
+                    return image_response.content
+
+                except Exception:
+                    continue
+
+            raise RuntimeError("❌ Failed to find a valid image after multiple attempts.")
+
+        except requests.exceptions.RequestException as e:
+             raise RuntimeError(f"❌ Failed to download from The Met: {e}")

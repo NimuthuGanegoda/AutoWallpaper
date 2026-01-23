@@ -13,6 +13,10 @@ from providers import (
     WallhavenProvider,
     BingProvider,
     PicsumProvider,
+    NasaApodProvider,
+    TheCatApiProvider,
+    TheDogApiProvider,
+    MetMuseumProvider,
 )
 
 # Provider mapping
@@ -25,6 +29,10 @@ PROVIDERS = {
     "6": WallhavenProvider(),
     "7": BingProvider(),
     "8": PicsumProvider(),
+    "9": NasaApodProvider(),
+    "10": TheCatApiProvider(),
+    "11": TheDogApiProvider(),
+    "12": MetMuseumProvider(),
 }
 
 # Categories for each provider
@@ -101,6 +109,26 @@ CATEGORIES = {
         "random",
         "seed",
     ],
+    "NASA APOD": [
+        "Today",
+        "Random",
+    ],
+    "TheCatAPI": [
+        "Random",
+    ],
+    "TheDogAPI": [
+        "Random",
+    ],
+    "The Met": [
+        "sunflowers",
+        "landscape",
+        "portrait",
+        "arms and armor",
+        "egyptian",
+        "asian art",
+        "islamic art",
+        "modern art",
+    ],
 }
 
 # Moods for filtering
@@ -113,6 +141,10 @@ MOODS = {
     "Wallhaven": [""],
     "Bing": [""],
     "Picsum": [""],
+    "NASA APOD": [""],
+    "TheCatAPI": [""],
+    "TheDogAPI": [""],
+    "The Met": [""],
 }
 
 # Resolution options
