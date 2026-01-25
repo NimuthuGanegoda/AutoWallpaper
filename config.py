@@ -19,6 +19,10 @@ from providers import (
     MetMuseumProvider,
     WikimediaCommonsProvider,
     LoremFlickrProvider,
+    RedditProvider,
+    DeviantArtProvider,
+    KonachanProvider,
+    FoodishProvider,
 )
 
 # Provider mapping
@@ -37,6 +41,10 @@ PROVIDERS = {
     "12": MetMuseumProvider(),
     "13": WikimediaCommonsProvider(),
     "14": LoremFlickrProvider(),
+    "15": RedditProvider(),
+    "16": DeviantArtProvider(),
+    "17": KonachanProvider(),
+    "18": FoodishProvider(),
 }
 
 # Categories for each provider
@@ -153,6 +161,41 @@ CATEGORIES = {
         "food",
         "car",
     ],
+    "Reddit": [
+        "wallpapers",
+        "EarthPorn",
+        "CityPorn",
+        "SpacePorn",
+        "AnimalPorn",
+        "FoodPorn",
+        "Art",
+    ],
+    "DeviantArt": [
+        "digital art",
+        "fantasy",
+        "anime",
+        "landscape",
+        "sci-fi",
+        "horror",
+    ],
+    "Konachan": [
+        "original",
+        "landscape",
+        "city",
+        "school_uniform",
+        "long_hair",
+        "clouds",
+        "sky",
+    ],
+    "Foodish": [
+        "Random",
+        "Pizza",
+        "Burger",
+        "Pasta",
+        "Biryani",
+        "Rice",
+        "Dessert",
+    ],
 }
 
 # Moods for filtering
@@ -171,6 +214,10 @@ MOODS = {
     "The Met": [""],
     "Wikimedia Commons": [""],
     "Lorem Flickr": [""],
+    "Reddit": ["hot", "top", "new", "rising"],
+    "DeviantArt": [""],
+    "Konachan": [""],
+    "Foodish": [""],
 }
 
 # Resolution options

@@ -19,6 +19,7 @@ import re
 import random
 import math
 import concurrent.futures
+import xml.etree.ElementTree as ET
 
 
 class ImageProvider(ABC):
@@ -823,3 +824,235 @@ class LoremFlickrProvider(ImageProvider):
         # Note: LoremFlickr redirects to the actual image.
         # requests.get follows redirects by default.
         return self._download_bytes(url)
+
+
+class RedditProvider(ImageProvider):
+    """Image provider for Reddit."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://www.reddit.com/r"
+        # Reddit requires a custom User-Agent to avoid blocking
+        self.session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        })
+
+    def get_name(self) -> str:
+        return "Reddit"
+
+    def get_description(self) -> str:
+        return "Images from subreddits (Hot, Top, New)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        subreddit = category
+        sort = mood if mood else "hot"
+
+        # Construct URL: https://www.reddit.com/r/{subreddit}/{sort}.json
+        url = f"{self.base_url}/{subreddit}/{sort}.json"
+
+        print(f"⏳ Fetching from r/{subreddit} ({sort})...")
+
+        # Limit to 100 posts to find valid images
+        params = {"limit": 100}
+
+        try:
+            data = self._fetch_json(url, params=params)
+        except RuntimeError as e:
+            if "403" in str(e) or "429" in str(e):
+                raise RuntimeError("❌ Reddit API blocked the request (Rate limit or IP block). Try again later.")
+            raise e
+
+        posts = data.get("data", {}).get("children", [])
+        if not posts:
+            raise RuntimeError(f"❌ No posts found in r/{subreddit}.")
+
+        valid_images = []
+        valid_extensions = (".jpg", ".jpeg", ".png", ".webp")
+
+        for post in posts:
+            post_data = post.get("data", {})
+            url = post_data.get("url", "")
+
+            # Check for direct image links
+            if url.lower().endswith(valid_extensions):
+                valid_images.append(url)
+            # Sometimes reddit hosts images but URL doesn't end in extension?
+            # Usually 'url_overridden_by_dest' works too.
+
+        if not valid_images:
+            raise RuntimeError(f"❌ No valid images found in r/{subreddit} current feed.")
+
+        image_url = random.choice(valid_images)
+        return self._download_bytes(image_url)
+
+
+class DeviantArtProvider(ImageProvider):
+    """Image provider for DeviantArt RSS."""
+
+    def __init__(self):
+        super().__init__()
+        self.rss_url = "https://backend.deviantart.com/rss.xml"
+
+    def get_name(self) -> str:
+        return "DeviantArt"
+
+    def get_description(self) -> str:
+        return "Popular art via RSS (No API key needed)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        query = f"boost:popular {category}"
+        if mood:
+            query = f"{query} {mood}"
+
+        params = {"q": query}
+
+        print(f"⏳ Searching DeviantArt ({query})...")
+
+        # We need raw XML, not JSON
+        try:
+            response = self.session.get(self.rss_url, params=params, timeout=15)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"❌ Connection error (DeviantArt): {e}")
+
+        # Parse XML
+        try:
+            root = ET.fromstring(response.content)
+        except ET.ParseError:
+            raise RuntimeError("❌ Failed to parse DeviantArt RSS feed.")
+
+        # Find all items
+        items = root.findall(".//item")
+        if not items:
+            raise RuntimeError(f"❌ No results found for '{category}' on DeviantArt.")
+
+        # Namespaces in RSS are tricky with ElementTree.
+        # media:content is usually what we want.
+        # However, finding by tag name without namespace map is hard if not defined.
+        # Let's iterate and look for media:content or use simple finding.
+
+        valid_urls = []
+
+        # Namespace map
+        namespaces = {
+            'media': 'http://search.yahoo.com/mrss/'
+        }
+
+        for item in items:
+            # Try to find media:content
+            media = item.find('media:content', namespaces)
+            if media is not None:
+                url = media.get('url')
+                if url:
+                    valid_urls.append(url)
+            else:
+                # Fallback to parsing description for img tag?
+                # Or parsing <media:content> manually if namespace fails
+                pass
+
+        if not valid_urls:
+             # Try a simpler approach if namespace failed or no media content found
+             # Sometimes 'guid' works? No, that's the page.
+             raise RuntimeError(f"❌ No image URLs extracted from DeviantArt RSS.")
+
+        image_url = random.choice(valid_urls)
+        return self._download_bytes(image_url)
+
+
+class KonachanProvider(ImageProvider):
+    """Image provider for Konachan.net (Anime wallpapers)."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://konachan.net/post.json"
+
+    def get_name(self) -> str:
+        return "Konachan"
+
+    def get_description(self) -> str:
+        return "Anime Wallpapers (Konachan.net)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        tags = category
+        if mood:
+            tags = f"{category} {mood}"
+
+        # If category is "random", we don't send tags to get random latest
+        params = {"limit": 100}
+        if category.lower() != "random":
+            params["tags"] = tags
+
+        print(f"⏳ Searching Konachan ({tags})...")
+        data = self._fetch_json(self.api_url, params=params)
+
+        if not data:
+             raise RuntimeError(f"❌ No images found for '{tags}' on Konachan.")
+
+        # Filter for Safe images if needed?
+        # Let's verify rating. s=safe, q=questionable, e=explicit
+        # We prefer safe by default unless user asked for something specific?
+        # But we don't have a safety toggle in the UI.
+        # We'll filter for safe if the user didn't specify 'nsfw' or similar in tags.
+
+        check_safety = "nsfw" not in tags.lower() and "lewd" not in tags.lower()
+
+        valid_images = []
+        for post in data:
+            if check_safety and post.get("rating") != "s":
+                continue
+
+            # Use file_url (original) or jpeg_url (large)
+            url = post.get("file_url") or post.get("jpeg_url")
+            if url:
+                valid_images.append(url)
+
+        if not valid_images:
+            if check_safety:
+                 raise RuntimeError(f"❌ No SAFE images found for '{tags}'. Try adding 'safe' to search.")
+            raise RuntimeError(f"❌ No images found for '{tags}'.")
+
+        image_url = random.choice(valid_images)
+
+        # Konachan images are often HTTP, but we should handle that.
+        if image_url.startswith("//"):
+            image_url = "https:" + image_url
+
+        return self._download_bytes(image_url)
+
+
+class FoodishProvider(ImageProvider):
+    """Image provider for Foodish API."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://foodish-api.com/api/"
+
+    def get_name(self) -> str:
+        return "Foodish"
+
+    def get_description(self) -> str:
+        return "Random tasty food images"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Foodish has specific endpoints for categories: /images/burger, /images/pizza, etc.
+        # But the main API returns random.
+        # Or we can use https://foodish-api.com/api/images/{category}
+        # Categories: biryani, burger, butter-chicken, dessert, dosa, idli, pasta, pizza, rice, samosa
+
+        valid_categories = [
+            "biryani", "burger", "butter-chicken", "dessert", "dosa",
+            "idli", "pasta", "pizza", "rice", "samosa"
+        ]
+
+        url = self.api_url
+        if category.lower() in valid_categories:
+            url = f"https://foodish-api.com/api/images/{category.lower()}"
+
+        print(f"⏳ Fetching from Foodish ({category if category.lower() in valid_categories else 'Random'})...")
+        data = self._fetch_json(url)
+
+        image_url = data.get("image")
+        if not image_url:
+            raise RuntimeError("❌ No image returned from Foodish.")
+
+        return self._download_bytes(image_url)
