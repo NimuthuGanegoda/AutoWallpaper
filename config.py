@@ -23,6 +23,10 @@ from providers import (
     DeviantArtProvider,
     KonachanProvider,
     FoodishProvider,
+    FoxProvider,
+    MemeProvider,
+    ZenQuotesProvider,
+    SafebooruProvider,
 )
 
 # Provider mapping
@@ -45,6 +49,10 @@ PROVIDERS = {
     "16": DeviantArtProvider(),
     "17": KonachanProvider(),
     "18": FoodishProvider(),
+    "19": FoxProvider(),
+    "20": MemeProvider(),
+    "21": ZenQuotesProvider(),
+    "22": SafebooruProvider(),
 }
 
 # Categories for each provider
@@ -196,6 +204,30 @@ CATEGORIES = {
         "Rice",
         "Dessert",
     ],
+    "Random Fox": [
+        "Random",
+    ],
+    "Meme API": [
+        "wholesomememes",
+        "dankmemes",
+        "me_irl",
+        "ProgrammerHumor",
+        "memes",
+        "catmemes",
+        "dogmemes",
+    ],
+    "ZenQuotes": [
+        "Inspirational",
+        "Random",
+    ],
+    "Safebooru": [
+        "anime",
+        "scenery",
+        "general",
+        "uniform",
+        "original",
+        "fantasy",
+    ],
 }
 
 # Moods for filtering
@@ -218,6 +250,10 @@ MOODS = {
     "DeviantArt": [""],
     "Konachan": [""],
     "Foodish": [""],
+    "Random Fox": [""],
+    "Meme API": [""],
+    "ZenQuotes": [""],
+    "Safebooru": [""],
 }
 
 # Resolution options

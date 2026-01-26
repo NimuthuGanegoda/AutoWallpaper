@@ -1056,3 +1056,133 @@ class FoodishProvider(ImageProvider):
             raise RuntimeError("❌ No image returned from Foodish.")
 
         return self._download_bytes(image_url)
+
+class FoxProvider(ImageProvider):
+    """Image provider for Random Fox API."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://randomfox.ca/floof/"
+
+    def get_name(self) -> str:
+        return "Random Fox"
+
+    def get_description(self) -> str:
+        return "Random fox images"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        print(f"⏳ Downloading from Random Fox...")
+        data = self._fetch_json(self.api_url)
+
+        image_url = data.get("image")
+        if not image_url:
+            raise RuntimeError("❌ No image returned from Random Fox.")
+
+        return self._download_bytes(image_url)
+
+
+class MemeProvider(ImageProvider):
+    """Image provider for Meme API."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://meme-api.com/gimme"
+
+    def get_name(self) -> str:
+        return "Meme API"
+
+    def get_description(self) -> str:
+        return "Memes from Reddit"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Category can be a subreddit
+        url = self.base_url
+        if category and category.lower() != "random":
+             url = f"{self.base_url}/{category}"
+
+        print(f"⏳ Fetching meme ({category})...")
+        data = self._fetch_json(url)
+
+        if "code" in data:
+             # Error response
+             message = data.get("message", "Unknown error")
+             raise RuntimeError(f"❌ Meme API Error: {message}")
+
+        image_url = data.get("url")
+        if not image_url:
+            raise RuntimeError("❌ No image URL returned from Meme API.")
+
+        return self._download_bytes(image_url)
+
+
+class ZenQuotesProvider(ImageProvider):
+    """Image provider for ZenQuotes."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://zenquotes.io/api/image"
+
+    def get_name(self) -> str:
+        return "ZenQuotes"
+
+    def get_description(self) -> str:
+        return "Inspirational quotes on images"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # ZenQuotes returns image bytes directly at the URL
+        print(f"⏳ Downloading from ZenQuotes...")
+        return self._download_bytes(self.api_url)
+
+
+class SafebooruProvider(ImageProvider):
+    """Image provider for Safebooru (Anime)."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://safebooru.org/index.php"
+
+    def get_name(self) -> str:
+        return "Safebooru"
+
+    def get_description(self) -> str:
+        return "Safe Anime Wallpapers"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        tags = category
+        if mood:
+            tags = f"{category} {mood}"
+
+        # API: page=dapi&s=post&q=index&json=1&limit=100
+        params = {
+            "page": "dapi",
+            "s": "post",
+            "q": "index",
+            "json": "1",
+            "limit": 100
+        }
+
+        if category.lower() != "random":
+            params["tags"] = tags
+
+        print(f"⏳ Searching Safebooru ({tags})...")
+        data = self._fetch_json(self.api_url, params=params)
+
+        if not data:
+             raise RuntimeError(f"❌ No images found for '{tags}' on Safebooru.")
+
+        valid_images = []
+        for post in data:
+            # We prefer file_url or sample_url
+            if "file_url" in post:
+                valid_images.append(post["file_url"])
+            elif "image" in post and "directory" in post:
+                 # Fallback construction if file_url is missing
+                 # https://safebooru.org/images/{directory}/{image}
+                 url = f"https://safebooru.org/images/{post['directory']}/{post['image']}"
+                 valid_images.append(url)
+
+        if not valid_images:
+            raise RuntimeError(f"❌ No valid images found for '{tags}'.")
+
+        image_url = random.choice(valid_images)
+        return self._download_bytes(image_url)
