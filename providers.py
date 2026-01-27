@@ -1186,3 +1186,267 @@ class SafebooruProvider(ImageProvider):
 
         image_url = random.choice(valid_images)
         return self._download_bytes(image_url)
+
+
+class XKCDProvider(ImageProvider):
+    """Image provider for XKCD."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://xkcd.com/info.0.json"
+
+    def get_name(self) -> str:
+        return "XKCD"
+
+    def get_description(self) -> str:
+        return "XKCD Webcomics"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        url = self.api_url
+
+        # If random, first get current to find max num, then pick random
+        if category.lower() == "random":
+             try:
+                 current = self._fetch_json(self.api_url)
+                 max_num = current["num"]
+                 rand_num = random.randint(1, max_num)
+                 url = f"https://xkcd.com/{rand_num}/info.0.json"
+             except Exception as e:
+                 print(f"⚠️ Failed to get random XKCD, defaulting to current: {e}")
+                 url = self.api_url
+
+        print(f"⏳ Fetching XKCD ({category})...")
+        data = self._fetch_json(url)
+
+        image_url = data.get("img")
+        if not image_url:
+            raise RuntimeError("❌ No image URL returned from XKCD.")
+
+        return self._download_bytes(image_url)
+
+
+class DogCeoProvider(ImageProvider):
+    """Image provider for Dog CEO."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://dog.ceo/api/breeds/image/random"
+
+    def get_name(self) -> str:
+        return "Dog CEO"
+
+    def get_description(self) -> str:
+        return "Random Dog Images (Dog CEO)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        print(f"⏳ Fetching from Dog CEO...")
+        data = self._fetch_json(self.api_url)
+
+        image_url = data.get("message")
+        if not image_url:
+            raise RuntimeError("❌ No image URL returned from Dog CEO.")
+
+        return self._download_bytes(image_url)
+
+
+class ImgFlipProvider(ImageProvider):
+    """Image provider for ImgFlip Memes."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://api.imgflip.com/get_memes"
+
+    def get_name(self) -> str:
+        return "ImgFlip"
+
+    def get_description(self) -> str:
+        return "Popular Meme Templates"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        print(f"⏳ Fetching from ImgFlip...")
+        data = self._fetch_json(self.api_url)
+
+        if not data.get("success"):
+            raise RuntimeError("❌ ImgFlip API returned failure.")
+
+        memes = data.get("data", {}).get("memes", [])
+        if not memes:
+            raise RuntimeError("❌ No memes found from ImgFlip.")
+
+        # Pick a random meme from top 100
+        meme = random.choice(memes)
+        image_url = meme.get("url")
+
+        if not image_url:
+            raise RuntimeError("❌ No image URL in ImgFlip meme.")
+
+        return self._download_bytes(image_url)
+
+
+class CoffeeProvider(ImageProvider):
+    """Image provider for Coffee API."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://coffee.alexflipnote.dev/random.json"
+
+    def get_name(self) -> str:
+        return "Coffee"
+
+    def get_description(self) -> str:
+        return "Random Coffee Images"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        print(f"⏳ Fetching coffee...")
+        data = self._fetch_json(self.api_url)
+
+        image_url = data.get("file")
+        if not image_url:
+            raise RuntimeError("❌ No image URL returned from Coffee API.")
+
+        return self._download_bytes(image_url)
+
+
+class CataasProvider(ImageProvider):
+    """Image provider for Cataas (Cat as a service)."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://cataas.com"
+
+    def get_name(self) -> str:
+        return "Cataas"
+
+    def get_description(self) -> str:
+        return "Cat as a Service (Cataas)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # We use ?json=true to get the URL
+        url = f"{self.base_url}/cat?json=true"
+
+        # We can also add tags if category is not "random"
+        # https://cataas.com/cat/{tag}?json=true
+        if category and category.lower() != "random":
+             url = f"{self.base_url}/cat/{category}?json=true"
+
+        print(f"⏳ Fetching from Cataas ({category})...")
+        data = self._fetch_json(url)
+
+        # Response: {"id": "...", "url": "..."}
+        # Note: The "url" field in response might be relative, e.g. "/cat/..."
+
+        rel_url = data.get("url")
+        if not rel_url:
+             # Sometimes it might just return the id?
+             # Let's rely on 'id' if 'url' is missing
+             _id = data.get("_id") # Sometimes it's _id
+             if not _id:
+                 _id = data.get("id")
+
+             if _id:
+                 rel_url = f"/cat/{_id}"
+             else:
+                 raise RuntimeError("❌ No URL or ID returned from Cataas.")
+
+        if not rel_url.startswith("http"):
+            image_url = f"{self.base_url}{rel_url}"
+        else:
+            image_url = rel_url
+
+        return self._download_bytes(image_url)
+
+
+class PlaceBearProvider(ImageProvider):
+    """Image provider for PlaceBear."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://placebear.com"
+        self.width = 1920
+        self.height = 1080
+
+    def get_name(self) -> str:
+        return "PlaceBear"
+
+    def get_description(self) -> str:
+        return "Bear placeholder images"
+
+    def set_resolution(self, resolution: str):
+        try:
+            if "x" in resolution:
+                parts = resolution.lower().split("x")
+                if len(parts) >= 2:
+                    self.width = int(parts[0])
+                    self.height = int(parts[1])
+        except ValueError:
+            pass
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        url = f"{self.base_url}/{self.width}/{self.height}"
+        print(f"⏳ Downloading from PlaceBear...")
+        return self._download_bytes(url)
+
+
+class PlaceDogProvider(ImageProvider):
+    """Image provider for PlaceDog."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://placedog.net"
+        self.width = 1920
+        self.height = 1080
+
+    def get_name(self) -> str:
+        return "PlaceDog"
+
+    def get_description(self) -> str:
+        return "Dog placeholder images"
+
+    def set_resolution(self, resolution: str):
+        try:
+            if "x" in resolution:
+                parts = resolution.lower().split("x")
+                if len(parts) >= 2:
+                    self.width = int(parts[0])
+                    self.height = int(parts[1])
+        except ValueError:
+            pass
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # https://placedog.net/1920/1080?random
+        url = f"{self.base_url}/{self.width}/{self.height}?random"
+        print(f"⏳ Downloading from PlaceDog...")
+        return self._download_bytes(url)
+
+
+class RobohashProvider(ImageProvider):
+    """Image provider for Robohash."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://robohash.org"
+
+    def get_name(self) -> str:
+        return "Robohash"
+
+    def get_description(self) -> str:
+        return "Generated robots/monsters/cats"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # category can be used as the seed text
+        text = category if category.lower() != "random" else str(random.random())
+
+        # Set can be controlled by mood or we can map it?
+        # Sets: set1 (robots), set2 (monsters), set3 (disembodied heads), set4 (cats)
+        # Let's map "monster" -> set2, "cat" -> set4, default -> set1
+
+        set_val = "set1"
+        if "monster" in category.lower() or "monster" in mood.lower():
+            set_val = "set2"
+        elif "cat" in category.lower() or "cat" in mood.lower():
+            set_val = "set4"
+
+        url = f"{self.base_url}/{text}.png?set={set_val}&size=1024x1024"
+
+        print(f"⏳ Downloading from Robohash ({set_val})...")
+        return self._download_bytes(url)

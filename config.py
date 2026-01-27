@@ -27,6 +27,14 @@ from providers import (
     MemeProvider,
     ZenQuotesProvider,
     SafebooruProvider,
+    XKCDProvider,
+    DogCeoProvider,
+    ImgFlipProvider,
+    CoffeeProvider,
+    CataasProvider,
+    PlaceBearProvider,
+    PlaceDogProvider,
+    RobohashProvider,
 )
 
 # Provider mapping
@@ -53,6 +61,14 @@ PROVIDERS = {
     "20": MemeProvider(),
     "21": ZenQuotesProvider(),
     "22": SafebooruProvider(),
+    "23": XKCDProvider(),
+    "24": DogCeoProvider(),
+    "25": ImgFlipProvider(),
+    "26": CoffeeProvider(),
+    "27": CataasProvider(),
+    "28": PlaceBearProvider(),
+    "29": PlaceDogProvider(),
+    "30": RobohashProvider(),
 }
 
 # Categories for each provider
@@ -228,6 +244,36 @@ CATEGORIES = {
         "original",
         "fantasy",
     ],
+    "XKCD": [
+        "Current",
+        "Random",
+    ],
+    "Dog CEO": [
+        "Random",
+    ],
+    "ImgFlip": [
+        "Random",
+    ],
+    "Coffee": [
+        "Random",
+    ],
+    "Cataas": [
+        "Random",
+        "cute",
+        "funny",
+        "orange",
+        "black",
+    ],
+    "PlaceBear": [
+        "Random",
+    ],
+    "PlaceDog": [
+        "Random",
+    ],
+    "Robohash": [
+        "Random",
+        "Custom Text",
+    ],
 }
 
 # Moods for filtering
@@ -254,6 +300,14 @@ MOODS = {
     "Meme API": [""],
     "ZenQuotes": [""],
     "Safebooru": [""],
+    "XKCD": [""],
+    "Dog CEO": [""],
+    "ImgFlip": [""],
+    "Coffee": [""],
+    "Cataas": [""],
+    "PlaceBear": [""],
+    "PlaceDog": [""],
+    "Robohash": ["robots", "monsters", "cats"],
 }
 
 # Resolution options
