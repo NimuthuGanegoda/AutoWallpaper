@@ -490,7 +490,10 @@ class BingProvider(ImageProvider):
         # Map category to idx
         idx = 0
         cat_lower = category.lower()
-        if "yesterday" in cat_lower:
+
+        if "random" in cat_lower:
+            idx = random.randint(0, 7)
+        elif "yesterday" in cat_lower:
             idx = 1
         elif "days ago" in cat_lower:
             try:
@@ -1449,4 +1452,162 @@ class RobohashProvider(ImageProvider):
         url = f"{self.base_url}/{text}.png?set={set_val}&size=1024x1024"
 
         print(f"⏳ Downloading from Robohash ({set_val})...")
+        return self._download_bytes(url)
+
+
+class InspirobotProvider(ImageProvider):
+    """Image provider for Inspirobot (AI Generated Quotes)."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://inspirobot.me/api?generate=true"
+
+    def get_name(self) -> str:
+        return "Inspirobot"
+
+    def get_description(self) -> str:
+        return "AI generated inspirational quotes"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        print(f"⏳ Generating quote from Inspirobot...")
+        # Inspirobot returns the URL in the response body text
+        try:
+            response = self.session.get(self.api_url, timeout=15)
+            response.raise_for_status()
+            image_url = response.text
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"❌ Connection error (Inspirobot): {e}")
+
+        return self._download_bytes(image_url)
+
+
+class JikanProvider(ImageProvider):
+    """Image provider for Jikan (MyAnimeList)."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://api.jikan.moe/v4/random/anime"
+
+    def get_name(self) -> str:
+        return "Jikan (Anime)"
+
+    def get_description(self) -> str:
+        return "Random Anime Info & Art (MyAnimeList)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        print(f"⏳ Fetching random anime from Jikan...")
+
+        url = self.api_url
+        params = {}
+
+        if category and category.lower() != "random":
+             # Use search
+             url = "https://api.jikan.moe/v4/anime"
+             params = {"q": category, "limit": 1}
+             print(f"⏳ Searching Jikan for '{category}'...")
+
+        # Jikan has strict rate limits, so we handle it gracefully
+        try:
+             data = self._fetch_json(url, params=params)
+        except RuntimeError as e:
+             if "429" in str(e):
+                 raise RuntimeError("❌ Jikan API Rate Limit Reached. Please wait a moment.")
+             raise e
+
+        anime = None
+        if category and category.lower() != "random":
+            if not data.get("data"):
+                 raise RuntimeError(f"❌ No anime found for '{category}'.")
+            anime = data["data"][0]
+        else:
+            anime = data.get("data")
+            if not anime:
+                 raise RuntimeError("❌ No data returned from Jikan.")
+
+        images = anime.get("images", {}).get("jpg", {})
+        image_url = images.get("large_image_url") or images.get("image_url")
+
+        if not image_url:
+             raise RuntimeError("❌ No image URL found.")
+
+        title = anime.get("title_english") or anime.get("title")
+        print(f"   Found: {title}")
+
+        return self._download_bytes(image_url)
+
+
+class ScryfallProvider(ImageProvider):
+    """Image provider for Scryfall (Magic: The Gathering)."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://api.scryfall.com/cards/random"
+
+    def get_name(self) -> str:
+        return "Scryfall"
+
+    def get_description(self) -> str:
+        return "Magic: The Gathering Card Art"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        params = {}
+        if category and category.lower() != "random":
+             params["q"] = f"art:{category}" # Search for art tags? or type?
+             # 'art:city' finds cards with city in art.
+             # 't:dragon' finds dragons.
+             # Let's try to be smart. If mood is set, use it?
+             # If category is a creature type, use t:.
+             # Let's just use 'q' parameter which searches everything.
+             params["q"] = category
+
+        print(f"⏳ Fetching from Scryfall ({category})...")
+        data = self._fetch_json(self.api_url, params=params)
+
+        image_uris = data.get("image_uris")
+        if not image_uris:
+            # Sometimes double-faced cards have 'card_faces'
+            card_faces = data.get("card_faces")
+            if card_faces and "image_uris" in card_faces[0]:
+                image_uris = card_faces[0]["image_uris"]
+            else:
+                raise RuntimeError("❌ No image URIs found on Scryfall card.")
+
+        # Prefer art_crop (just the art) or large (full card)
+        # For wallpapers, art_crop is usually better?
+        # But text is cool too. Let's use large (full card) or border_crop.
+        # User might want the art. Let's defaults to art_crop if available, else large.
+        image_url = image_uris.get("art_crop") or image_uris.get("large")
+
+        return self._download_bytes(image_url)
+
+
+class HTTPCatsProvider(ImageProvider):
+    """Image provider for HTTP Cats."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://http.cat"
+        self.codes = [
+            100, 101, 102, 103,
+            200, 201, 202, 203, 204, 205, 206, 207,
+            300, 301, 302, 303, 304, 305, 307, 308,
+            400, 401, 402, 403, 404, 405, 406, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 420, 421, 422, 423, 424, 425, 426, 429, 431, 444, 450, 451, 497, 498, 499,
+            500, 501, 502, 503, 504, 506, 507, 508, 509, 510, 511, 521, 522, 523, 525, 599
+        ]
+
+    def get_name(self) -> str:
+        return "HTTP Cats"
+
+    def get_description(self) -> str:
+        return "Cats for every HTTP Status Code"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        code = 404
+        if category.isdigit():
+            code = int(category)
+        elif category.lower() == "random":
+            code = random.choice(self.codes)
+
+        url = f"{self.base_url}/{code}"
+        print(f"⏳ Downloading HTTP Cat {code}...")
         return self._download_bytes(url)
