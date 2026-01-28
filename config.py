@@ -35,6 +35,10 @@ from providers import (
     PlaceBearProvider,
     PlaceDogProvider,
     RobohashProvider,
+    InspirobotProvider,
+    JikanProvider,
+    ScryfallProvider,
+    HTTPCatsProvider,
 )
 
 # Provider mapping
@@ -69,6 +73,10 @@ PROVIDERS = {
     "28": PlaceBearProvider(),
     "29": PlaceDogProvider(),
     "30": RobohashProvider(),
+    "31": InspirobotProvider(),
+    "32": JikanProvider(),
+    "33": ScryfallProvider(),
+    "34": HTTPCatsProvider(),
 }
 
 # Categories for each provider
@@ -132,6 +140,7 @@ CATEGORIES = {
         "scifi",
     ],
     "Bing": [
+        "Random",
         "Today",
         "Yesterday",
         "2 days ago",
@@ -274,6 +283,31 @@ CATEGORIES = {
         "Random",
         "Custom Text",
     ],
+    "Inspirobot": [
+        "Random",
+    ],
+    "Jikan (Anime)": [
+        "Random",
+        "Naruto",
+        "One Piece",
+        "Bleach",
+        "Gintama",
+    ],
+    "Scryfall": [
+        "Random",
+        "Dragon",
+        "Angel",
+        "Goblin",
+        "Elf",
+        "Planeswalker",
+    ],
+    "HTTP Cats": [
+        "Random",
+        "404",
+        "500",
+        "200",
+        "418",
+    ],
 }
 
 # Moods for filtering
@@ -308,6 +342,10 @@ MOODS = {
     "PlaceBear": [""],
     "PlaceDog": [""],
     "Robohash": ["robots", "monsters", "cats"],
+    "Inspirobot": [""],
+    "Jikan (Anime)": [""],
+    "Scryfall": [""],
+    "HTTP Cats": [""],
 }
 
 # Resolution options
