@@ -17,6 +17,10 @@ A modular Python application that downloads beautiful wallpapers from multiple s
   - 🐈 **TheCatAPI** - Random cat images
   - 🐕 **TheDogAPI** - Random dog images
   - 🏛️ **The Met** - Classic art from The Metropolitan Museum of Art
+  - 🎨 **Art Institute of Chicago** - Classic and modern art
+  - 👽 **Rick and Morty** - Character images from the show
+  - 📚 **Open Library** - Book cover art
+  - 🎲 **Random Source** - Surprise me! (Picks a random provider)
 
 - **Cross-Platform Support**
   - ✅ Windows (using WinAPI)

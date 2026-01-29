@@ -1611,3 +1611,187 @@ class HTTPCatsProvider(ImageProvider):
         url = f"{self.base_url}/{code}"
         print(f"⏳ Downloading HTTP Cat {code}...")
         return self._download_bytes(url)
+
+
+class ArtInstituteProvider(ImageProvider):
+    """Image provider for Art Institute of Chicago."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://api.artic.edu/api/v1/artworks"
+
+    def get_name(self) -> str:
+        return "Art Institute Chicago"
+
+    def get_description(self) -> str:
+        return "Classic artworks from Chicago"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Docs: https://api.artic.edu/docs/#collections-1
+        # Search: /search?q={query}&fields=id,title,image_id
+
+        url = f"{self.api_url}/search"
+        params = {
+            "q": category if category.lower() != "random" else "painting",
+            "fields": "id,title,image_id",
+            "limit": 20
+        }
+
+        print(f"⏳ Searching Art Institute ({params['q']})...")
+        data = self._fetch_json(url, params=params)
+
+        items = data.get("data", [])
+        if not items:
+            raise RuntimeError(f"❌ No artworks found for '{category}'.")
+
+        # Filter items with image_id
+        valid_items = [item for item in items if item.get("image_id")]
+        if not valid_items:
+            raise RuntimeError(f"❌ No valid images found for '{category}'.")
+
+        chosen = random.choice(valid_items)
+        image_id = chosen.get("image_id")
+        title = chosen.get("title", "Unknown")
+
+        # Get IIIF URL from config if available, else hardcode default
+        # The response usually has a 'config' key but it's at the root.
+        iiif_url = data.get("config", {}).get("iiif_url", "https://www.artic.edu/iiif/2")
+
+        # Construct full URL
+        # {iiif_url}/{identifier}/full/843,/0/default.jpg
+        image_url = f"{iiif_url}/{image_id}/full/1600,/0/default.jpg"
+
+        print(f"   Selected: {title}")
+        return self._download_bytes(image_url)
+
+
+class RickAndMortyProvider(ImageProvider):
+    """Image provider for Rick and Morty API."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://rickandmortyapi.com/api/character"
+
+    def get_name(self) -> str:
+        return "Rick and Morty"
+
+    def get_description(self) -> str:
+        return "Characters from Rick and Morty"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        if category.lower() == "random":
+            # Get random ID. Max is around 826.
+            # But let's fetch a random page to be safe if ID gap exists?
+            # Or just use the documented ID range.
+            rand_id = random.randint(1, 826)
+            url = f"{self.api_url}/{rand_id}"
+            print(f"⏳ Fetching random character (ID: {rand_id})...")
+            data = self._fetch_json(url)
+
+        else:
+            # Search by name
+            params = {"name": category}
+            print(f"⏳ Searching Rick and Morty for '{category}'...")
+            data = self._fetch_json(self.api_url, params=params)
+
+            results = data.get("results", [])
+            if not results:
+                raise RuntimeError(f"❌ No characters found for '{category}'.")
+
+            data = random.choice(results)
+
+        image_url = data.get("image")
+        name = data.get("name", "Unknown")
+        print(f"   Selected: {name}")
+
+        if not image_url:
+            raise RuntimeError("❌ No image URL found.")
+
+        return self._download_bytes(image_url)
+
+
+class OpenLibraryProvider(ImageProvider):
+    """Image provider for Open Library (Book Covers)."""
+
+    def __init__(self):
+        super().__init__()
+        self.search_url = "https://openlibrary.org/search.json"
+        self.cover_url = "https://covers.openlibrary.org/b/id"
+
+    def get_name(self) -> str:
+        return "Open Library"
+
+    def get_description(self) -> str:
+        return "Book Covers"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        query = category if category.lower() != "random" else "tolkien"
+
+        print(f"⏳ Searching Open Library for books ({query})...")
+        params = {"q": query, "limit": 20}
+
+        data = self._fetch_json(self.search_url, params=params)
+        docs = data.get("docs", [])
+
+        if not docs:
+            raise RuntimeError(f"❌ No books found for '{query}'.")
+
+        # Filter for cover_i
+        valid_docs = [doc for doc in docs if doc.get("cover_i")]
+        if not valid_docs:
+            raise RuntimeError(f"❌ No books with covers found for '{query}'.")
+
+        chosen = random.choice(valid_docs)
+        cover_id = chosen.get("cover_i")
+        title = chosen.get("title", "Unknown")
+
+        image_url = f"{self.cover_url}/{cover_id}-L.jpg"
+        print(f"   Selected: {title}")
+
+        return self._download_bytes(image_url)
+
+
+class RandomMetaProvider(ImageProvider):
+    """Meta-provider that selects a random provider."""
+
+    def __init__(self, providers_dict: dict, categories_dict: dict, moods_dict: dict):
+        super().__init__()
+        self.providers = providers_dict
+        self.categories = categories_dict
+        self.moods = moods_dict
+
+    def get_name(self) -> str:
+        return "🎲 Random Source"
+
+    def get_description(self) -> str:
+        return "Surprise me! (Random Provider)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Filter out self (ID "0") to avoid recursion
+        valid_keys = [k for k in self.providers.keys() if k != "0"]
+        if not valid_keys:
+             raise RuntimeError("❌ No other providers available.")
+
+        pid = random.choice(valid_keys)
+        provider = self.providers[pid]
+        p_name = provider.get_name()
+
+        # Determine category
+        # If user passed "random", pick a random category for this provider
+        target_cat = category
+        if category.lower() == "random":
+            cats = self.categories.get(p_name, ["Random"])
+            if cats:
+                target_cat = random.choice(cats)
+            else:
+                target_cat = "Random"
+
+        # Determine mood
+        target_mood = mood
+        if not mood:
+             moods = self.moods.get(p_name, [""])
+             if moods:
+                 target_mood = random.choice(moods)
+
+        print(f"🎲 Randomly selected: {p_name} -> {target_cat}")
+        return provider.download_image(target_cat, target_mood)
