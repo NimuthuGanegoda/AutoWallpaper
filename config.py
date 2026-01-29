@@ -39,6 +39,10 @@ from providers import (
     JikanProvider,
     ScryfallProvider,
     HTTPCatsProvider,
+    ArtInstituteProvider,
+    RickAndMortyProvider,
+    OpenLibraryProvider,
+    RandomMetaProvider,
 )
 
 # Provider mapping
@@ -77,6 +81,9 @@ PROVIDERS = {
     "32": JikanProvider(),
     "33": ScryfallProvider(),
     "34": HTTPCatsProvider(),
+    "35": ArtInstituteProvider(),
+    "36": RickAndMortyProvider(),
+    "37": OpenLibraryProvider(),
 }
 
 # Categories for each provider
@@ -308,6 +315,38 @@ CATEGORIES = {
         "200",
         "418",
     ],
+    "Art Institute Chicago": [
+        "Random",
+        "Impressionism",
+        "Modern Art",
+        "Renaissance",
+        "Landscape",
+        "Portrait",
+        "Japanese Prints",
+        "Sculpture",
+    ],
+    "Rick and Morty": [
+        "Random",
+        "Rick Sanchez",
+        "Morty Smith",
+        "Summer Smith",
+        "Beth Smith",
+        "Jerry Smith",
+        "Pickle Rick",
+    ],
+    "Open Library": [
+        "Random",
+        "Tolkien",
+        "Harry Potter",
+        "Asimov",
+        "Science Fiction",
+        "Fantasy",
+        "Horror",
+        "History",
+    ],
+    "🎲 Random Source": [
+        "Random",
+    ],
 }
 
 # Moods for filtering
@@ -346,7 +385,14 @@ MOODS = {
     "Jikan (Anime)": [""],
     "Scryfall": [""],
     "HTTP Cats": [""],
+    "Art Institute Chicago": [""],
+    "Rick and Morty": [""],
+    "Open Library": [""],
+    "🎲 Random Source": [""],
 }
+
+# Initialize RandomMetaProvider with dependencies
+PROVIDERS["0"] = RandomMetaProvider(PROVIDERS, CATEGORIES, MOODS)
 
 # Resolution options
 RESOLUTIONS = [
