@@ -1751,6 +1751,170 @@ class OpenLibraryProvider(ImageProvider):
         return self._download_bytes(image_url)
 
 
+class TheMealDbProvider(ImageProvider):
+    """Image provider for TheMealDB."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_key = os.getenv("THEMEALDB_API_KEY", "1")
+        self.api_url = f"https://www.themealdb.com/api/json/v1/{self.api_key}/"
+
+    def get_name(self) -> str:
+        return "TheMealDB"
+
+    def get_description(self) -> str:
+        return "Random Meals and Recipes"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        if category and category.lower() != "random":
+            url = f"{self.api_url}search.php"
+            params = {"s": category}
+            print(f"⏳ Searching TheMealDB for '{category}'...")
+            data = self._fetch_json(url, params=params)
+            meals = data.get("meals")
+            if not meals:
+                raise RuntimeError(f"❌ No meals found for '{category}'.")
+            meal = random.choice(meals)
+        else:
+            url = f"{self.api_url}random.php"
+            print(f"⏳ Fetching random meal from TheMealDB...")
+            data = self._fetch_json(url)
+            meals = data.get("meals")
+            if not meals:
+                raise RuntimeError("❌ No meal returned from API.")
+            meal = meals[0]
+
+        image_url = meal.get("strMealThumb")
+        name = meal.get("strMeal", "Unknown")
+        print(f"   Selected: {name}")
+
+        if not image_url:
+            raise RuntimeError("❌ No image URL found.")
+
+        return self._download_bytes(image_url)
+
+
+class TheCocktailDbProvider(ImageProvider):
+    """Image provider for TheCocktailDB."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_key = os.getenv("THECOCKTAILDB_API_KEY", "1")
+        self.api_url = f"https://www.thecocktaildb.com/api/json/v1/{self.api_key}/"
+
+    def get_name(self) -> str:
+        return "TheCocktailDB"
+
+    def get_description(self) -> str:
+        return "Random Cocktails and Drinks"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        if category and category.lower() != "random":
+            url = f"{self.api_url}search.php"
+            params = {"s": category}
+            print(f"⏳ Searching TheCocktailDB for '{category}'...")
+            data = self._fetch_json(url, params=params)
+            drinks = data.get("drinks")
+            if not drinks:
+                raise RuntimeError(f"❌ No drinks found for '{category}'.")
+            drink = random.choice(drinks)
+        else:
+            url = f"{self.api_url}random.php"
+            print(f"⏳ Fetching random drink from TheCocktailDB...")
+            data = self._fetch_json(url)
+            drinks = data.get("drinks")
+            if not drinks:
+                raise RuntimeError("❌ No drink returned from API.")
+            drink = drinks[0]
+
+        image_url = drink.get("strDrinkThumb")
+        name = drink.get("strDrink", "Unknown")
+        print(f"   Selected: {name}")
+
+        if not image_url:
+            raise RuntimeError("❌ No image URL found.")
+
+        return self._download_bytes(image_url)
+
+
+class GeneratedPeopleProvider(ImageProvider):
+    """Image provider for ThisPersonDoesNotExist."""
+
+    def __init__(self):
+        super().__init__()
+        self.url = "https://thispersondoesnotexist.com/"
+
+    def get_name(self) -> str:
+        return "ThisPersonDoesNotExist"
+
+    def get_description(self) -> str:
+        return "AI Generated People"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        print(f"⏳ Fetching AI generated person...")
+        # Note: This site returns the image bytes directly.
+        # It also might require User-Agent.
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        try:
+            response = self.session.get(self.url, headers=headers, timeout=15)
+            response.raise_for_status()
+            print("✅ Download successful!")
+            return response.content
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"❌ Failed to download image: {e}")
+
+
+class TheSportsDbProvider(ImageProvider):
+    """Image provider for TheSportsDB."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_key = os.getenv("THESPORTSDB_API_KEY", "3")
+        self.api_url = f"https://www.thesportsdb.com/api/v1/json/{self.api_key}/searchplayers.php"
+        self.famous_players = [
+            "Lionel Messi", "Cristiano Ronaldo", "LeBron James", "Stephen Curry",
+            "Tom Brady", "Tiger Woods", "Roger Federer", "Serena Williams",
+            "Michael Jordan", "Usain Bolt", "Neymar", "Kylian Mbappe"
+        ]
+
+    def get_name(self) -> str:
+        return "TheSportsDB"
+
+    def get_description(self) -> str:
+        return "Sports Players (Search or Random Famous)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        query = category
+        if not query or query.lower() == "random":
+            query = random.choice(self.famous_players)
+            print(f"🎲 Randomly selected player: {query}")
+
+        print(f"⏳ Searching TheSportsDB for '{query}'...")
+        params = {"p": query}
+
+        data = self._fetch_json(self.api_url, params=params)
+        players = data.get("player")
+
+        if not players:
+             raise RuntimeError(f"❌ No players found for '{query}'.")
+
+        # Filter players with strThumb or strCutout (prefer Thumb)
+        valid_players = [p for p in players if p.get("strThumb")]
+
+        if not valid_players:
+             raise RuntimeError(f"❌ No player images found for '{query}'.")
+
+        player = valid_players[0] # Best match usually first
+
+        image_url = player.get("strThumb")
+        name = player.get("strPlayer", "Unknown")
+        print(f"   Selected: {name}")
+
+        return self._download_bytes(image_url)
+
+
 class RandomMetaProvider(ImageProvider):
     """Meta-provider that selects a random provider."""
 

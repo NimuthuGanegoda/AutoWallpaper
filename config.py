@@ -42,6 +42,10 @@ from providers import (
     ArtInstituteProvider,
     RickAndMortyProvider,
     OpenLibraryProvider,
+    TheMealDbProvider,
+    TheCocktailDbProvider,
+    GeneratedPeopleProvider,
+    TheSportsDbProvider,
     RandomMetaProvider,
 )
 
@@ -84,6 +88,10 @@ PROVIDERS = {
     "35": ArtInstituteProvider(),
     "36": RickAndMortyProvider(),
     "37": OpenLibraryProvider(),
+    "38": TheMealDbProvider(),
+    "39": TheCocktailDbProvider(),
+    "40": GeneratedPeopleProvider(),
+    "41": TheSportsDbProvider(),
 }
 
 # Categories for each provider
@@ -344,6 +352,38 @@ CATEGORIES = {
         "Horror",
         "History",
     ],
+    "TheMealDB": [
+        "Random",
+        "Chicken",
+        "Beef",
+        "Seafood",
+        "Vegetarian",
+        "Pasta",
+        "Dessert",
+    ],
+    "TheCocktailDB": [
+        "Random",
+        "Margarita",
+        "Mojito",
+        "Martini",
+        "Vodka",
+        "Rum",
+        "Gin",
+    ],
+    "ThisPersonDoesNotExist": [
+        "Random",
+    ],
+    "TheSportsDB": [
+        "Random",
+        "Lionel Messi",
+        "Cristiano Ronaldo",
+        "LeBron James",
+        "Stephen Curry",
+        "Tom Brady",
+        "Tiger Woods",
+        "Roger Federer",
+        "Serena Williams",
+    ],
     "🎲 Random Source": [
         "Random",
     ],
@@ -388,6 +428,10 @@ MOODS = {
     "Art Institute Chicago": [""],
     "Rick and Morty": [""],
     "Open Library": [""],
+    "TheMealDB": [""],
+    "TheCocktailDB": [""],
+    "ThisPersonDoesNotExist": [""],
+    "TheSportsDB": [""],
     "🎲 Random Source": [""],
 }
 
