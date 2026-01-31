@@ -1959,3 +1959,330 @@ class RandomMetaProvider(ImageProvider):
 
         print(f"🎲 Randomly selected: {p_name} -> {target_cat}")
         return provider.download_image(target_cat, target_mood)
+
+
+class ClevelandMuseumProvider(ImageProvider):
+    """Image provider for Cleveland Museum of Art."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://openaccess-api.clevelandart.org/api/artworks/"
+
+    def get_name(self) -> str:
+        return "Cleveland Museum of Art"
+
+    def get_description(self) -> str:
+        return "Open Access Art from CMA"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Search parameters
+        params = {
+            "has_image": 1,
+            "limit": 1,
+            "skip": random.randint(0, 1000)
+        }
+
+        if category and category.lower() != "random":
+             params["q"] = category
+             params["skip"] = random.randint(0, 20)
+
+        print(f"⏳ Searching Cleveland Museum ({category})...")
+        data = self._fetch_json(self.api_url, params=params)
+
+        items = data.get("data", [])
+        if not items:
+            raise RuntimeError(f"❌ No artworks found for '{category}'.")
+
+        item = items[0]
+        images = item.get("images", {})
+        # Try web or print
+        image_url = images.get("web", {}).get("url") or images.get("print", {}).get("url")
+
+        if not image_url:
+             raise RuntimeError("❌ No image URL found in CMA response.")
+
+        title = item.get("title", "Unknown")
+        print(f"   Selected: {title}")
+
+        return self._download_bytes(image_url)
+
+
+class DisneyProvider(ImageProvider):
+    """Image provider for Disney API."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://api.disneyapi.dev/character"
+
+    def get_name(self) -> str:
+        return "Disney"
+
+    def get_description(self) -> str:
+        return "Disney Characters"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        params = {"pageSize": 1}
+
+        if category and category.lower() != "random":
+            params["name"] = category
+        else:
+            # Random page (Total ~7438)
+            params["page"] = random.randint(1, 7000)
+
+        print(f"⏳ Fetching Disney character ({category})...")
+        data = self._fetch_json(self.api_url, params=params)
+
+        items = data.get("data")
+        item = None
+
+        if isinstance(items, list):
+            if not items:
+                 raise RuntimeError(f"❌ No characters found for '{category}'.")
+            item = items[0]
+        elif isinstance(items, dict):
+            item = items
+        else:
+             raise RuntimeError("❌ Unexpected Disney API response.")
+
+        image_url = item.get("imageUrl")
+        name = item.get("name", "Unknown")
+        print(f"   Selected: {name}")
+
+        if not image_url:
+            raise RuntimeError("❌ No image URL found.")
+
+        return self._download_bytes(image_url)
+
+
+class WaifuPicsProvider(ImageProvider):
+    """Image provider for Waifu.pics."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://api.waifu.pics/sfw"
+
+    def get_name(self) -> str:
+        return "Waifu.pics"
+
+    def get_description(self) -> str:
+        return "Anime images (Waifu.pics)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        cat = category.lower()
+        if cat == "random":
+            cat = "waifu"
+
+        url = f"{self.base_url}/{cat}"
+        print(f"⏳ Fetching from Waifu.pics ({cat})...")
+
+        try:
+             data = self._fetch_json(url)
+        except RuntimeError:
+             if cat != "waifu":
+                 print(f"   Category '{cat}' not found, falling back to 'waifu'...")
+                 url = f"{self.base_url}/waifu"
+                 data = self._fetch_json(url)
+             else:
+                 raise
+
+        image_url = data.get("url")
+        if not image_url:
+            raise RuntimeError("❌ No image URL returned.")
+
+        return self._download_bytes(image_url)
+
+
+class HarryPotterProvider(ImageProvider):
+    """Image provider for HP-API."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://hp-api.onrender.com/api/characters"
+
+    def get_name(self) -> str:
+        return "Harry Potter"
+
+    def get_description(self) -> str:
+        return "Harry Potter Characters"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        print(f"⏳ Fetching Harry Potter characters...")
+        data = self._fetch_json(self.api_url)
+
+        valid_chars = [c for c in data if c.get("image")]
+
+        if not valid_chars:
+             raise RuntimeError("❌ No characters with images found.")
+
+        if category and category.lower() != "random":
+            filtered = [c for c in valid_chars if category.lower() in c.get("name", "").lower() or category.lower() in c.get("house", "").lower()]
+            if filtered:
+                valid_chars = filtered
+            else:
+                 print(f"   No match for '{category}', picking random...")
+
+        chosen = random.choice(valid_chars)
+        image_url = chosen.get("image")
+        name = chosen.get("name", "Unknown")
+        print(f"   Selected: {name}")
+
+        return self._download_bytes(image_url)
+
+
+class KitsuProvider(ImageProvider):
+    """Image provider for Kitsu Anime."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://kitsu.io/api/edge/anime"
+
+    def get_name(self) -> str:
+        return "Kitsu"
+
+    def get_description(self) -> str:
+        return "Anime Posters (Kitsu)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        params = {"page[limit]": 1}
+
+        if category and category.lower() != "random":
+             params["filter[text]"] = category
+        else:
+             params["page[offset]"] = random.randint(0, 12000)
+
+        print(f"⏳ Fetching from Kitsu ({category})...")
+        data = self._fetch_json(self.api_url, params=params)
+
+        items = data.get("data", [])
+        if not items:
+             raise RuntimeError(f"❌ No anime found for '{category}'.")
+
+        item = items[0]
+        attrs = item.get("attributes", {})
+
+        images = attrs.get("coverImage") or attrs.get("posterImage")
+
+        if not images:
+             raise RuntimeError("❌ No images found for this anime.")
+
+        image_url = images.get("original") or images.get("large")
+
+        title = attrs.get("canonicalTitle", "Unknown")
+        print(f"   Selected: {title}")
+
+        return self._download_bytes(image_url)
+
+
+class SpaceXProvider(ImageProvider):
+    """Image provider for SpaceX."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://api.spacexdata.com/v4/launches"
+
+    def get_name(self) -> str:
+        return "SpaceX"
+
+    def get_description(self) -> str:
+        return "SpaceX Launch Photos"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        items = []
+
+        if category.lower() == "latest":
+             url = f"{self.api_url}/latest"
+             print(f"⏳ Fetching latest SpaceX launch...")
+             data = self._fetch_json(url)
+
+             links = data.get("links", {}).get("flickr", {})
+             if links.get("original"):
+                 items = [data]
+             else:
+                 print("   Latest launch has no images, searching past launches...")
+
+        if not items:
+             # Search for random launch with images
+             url = f"{self.api_url}/query"
+             query = {
+                 "query": {
+                     "links.flickr.original": { "$ne": [] }
+                 },
+                 "options": {
+                     "limit": 1,
+                     "page": random.randint(1, 100),
+                     "select": ["name", "links"]
+                 }
+             }
+             if category.lower() != "latest":
+                 print(f"⏳ Searching SpaceX launches...")
+
+             try:
+                 response = self.session.post(url, json=query, timeout=15)
+                 response.raise_for_status()
+                 data = response.json()
+                 items = data.get("docs", [])
+             except Exception as e:
+                 print(f"   Query failed: {e}")
+                 # Fallback to latest if we haven't tried it already
+                 if category.lower() != "latest":
+                     url = f"{self.api_url}/latest"
+                     data = self._fetch_json(url)
+                     items = [data]
+
+        if not items:
+             raise RuntimeError("❌ No SpaceX launches with images found.")
+
+        item = items[0]
+        links = item.get("links", {}).get("flickr", {})
+        images = links.get("original", [])
+
+        if not images:
+             raise RuntimeError("❌ No images found for this launch.")
+
+        image_url = random.choice(images)
+        name = item.get("name", "Unknown")
+        print(f"   Selected: {name}")
+
+        return self._download_bytes(image_url)
+
+
+class DummyJsonProvider(ImageProvider):
+    """Image provider for DummyJSON."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://dummyjson.com/image"
+        self.width = 1920
+        self.height = 1080
+
+    def get_name(self) -> str:
+        return "DummyJSON"
+
+    def get_description(self) -> str:
+        return "Placeholder Images (DummyJSON)"
+
+    def set_resolution(self, resolution: str):
+        try:
+            if "x" in resolution:
+                parts = resolution.lower().split("x")
+                if len(parts) >= 2:
+                    self.width = int(parts[0])
+                    self.height = int(parts[1])
+        except ValueError:
+            pass
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        url = f"{self.base_url}/{self.width}x{self.height}"
+        text = category
+        if category.lower() == "random":
+             text = "Random Image"
+
+        params = {"text": text}
+        print(f"⏳ Downloading from DummyJSON...")
+
+        try:
+            response = self.session.get(url, params=params, timeout=15)
+            response.raise_for_status()
+            return response.content
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"❌ Failed to download: {e}")
