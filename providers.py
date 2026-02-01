@@ -2286,3 +2286,186 @@ class DummyJsonProvider(ImageProvider):
             return response.content
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"❌ Failed to download: {e}")
+
+class PokeApiProvider(ImageProvider):
+    """Image provider for PokeAPI."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://pokeapi.co/api/v2/pokemon"
+
+    def get_name(self) -> str:
+        return "PokeAPI"
+
+    def get_description(self) -> str:
+        return "Pokemon Official Artwork"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # If category is random, pick a random ID (1-1010)
+        # If category is a name, search for it.
+
+        name_or_id = category.lower()
+        if name_or_id == "random":
+            name_or_id = str(random.randint(1, 1010))
+
+        url = f"{self.api_url}/{name_or_id}"
+        print(f"⏳ Fetching Pokemon ({name_or_id})...")
+
+        try:
+            data = self._fetch_json(url)
+        except RuntimeError as e:
+            if "404" in str(e):
+                raise RuntimeError(f"❌ Pokemon '{category}' not found.")
+            raise e
+
+        sprites = data.get("sprites", {})
+        other = sprites.get("other", {})
+        official = other.get("official-artwork", {})
+        image_url = official.get("front_default")
+
+        if not image_url:
+            # Fallback to home (high res) or default
+            home = other.get("home", {})
+            image_url = home.get("front_default") or sprites.get("front_default")
+
+        if not image_url:
+             raise RuntimeError("❌ No image found for this Pokemon.")
+
+        name = data.get("name", "Unknown").title()
+        print(f"   Selected: {name}")
+
+        return self._download_bytes(image_url)
+
+
+class GhibliProvider(ImageProvider):
+    """Image provider for Studio Ghibli API."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://ghibliapi.vercel.app/films"
+
+    def get_name(self) -> str:
+        return "Studio Ghibli"
+
+    def get_description(self) -> str:
+        return "Studio Ghibli Movie Banners"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        print(f"⏳ Fetching Ghibli movies...")
+        data = self._fetch_json(self.api_url)
+
+        if not data:
+            raise RuntimeError("❌ No data returned from Ghibli API.")
+
+        # Filter by title if category is specific
+        if category and category.lower() != "random":
+            filtered = [m for m in data if category.lower() in m.get("title", "").lower()]
+            if filtered:
+                data = filtered
+            else:
+                print(f"   No match for '{category}', picking random...")
+
+        movie = random.choice(data)
+
+        # Prefer movie_banner (landscape) over image (poster)
+        image_url = movie.get("movie_banner") or movie.get("image")
+
+        if not image_url:
+             raise RuntimeError("❌ No image URL found for this movie.")
+
+        title = movie.get("title", "Unknown")
+        print(f"   Selected: {title}")
+
+        return self._download_bytes(image_url)
+
+
+class DigimonProvider(ImageProvider):
+    """Image provider for Digimon API."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://digi-api.com/api/v1/digimon"
+
+    def get_name(self) -> str:
+        return "Digimon"
+
+    def get_description(self) -> str:
+        return "Digimon Characters"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # If random, pick ID 1-1400
+        query = category
+        if category.lower() == "random":
+             query = str(random.randint(1, 1400))
+
+        url = f"{self.api_url}/{query}"
+        print(f"⏳ Fetching Digimon ({query})...")
+
+        try:
+            data = self._fetch_json(url)
+        except RuntimeError as e:
+            if "404" in str(e):
+                raise RuntimeError(f"❌ Digimon '{category}' not found.")
+            raise e
+
+        images = data.get("images", [])
+        if not images:
+             raise RuntimeError("❌ No images found for this Digimon.")
+
+        image_url = images[0].get("href")
+
+        if not image_url:
+             raise RuntimeError("❌ No image URL found.")
+
+        name = data.get("name", "Unknown")
+        print(f"   Selected: {name}")
+
+        return self._download_bytes(image_url)
+
+
+class ZeldaCompendiumProvider(ImageProvider):
+    """Image provider for Hyrule Compendium (Zelda BOTW)."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://botw-compendium.herokuapp.com/api/v3/compendium/entry"
+
+    def get_name(self) -> str:
+        return "Zelda (BOTW)"
+
+    def get_description(self) -> str:
+        return "Breath of the Wild Compendium"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # If category is random, pick a random ID (1-389)
+        # Note: IDs go up to 389 for creatures/monsters/treasure.
+        # Actually there are more categories.
+        # Let's just pick a random ID.
+
+        entry_id = category
+        if category.lower() == "random":
+            entry_id = str(random.randint(1, 389))
+
+        # If it's a name, the API supports name lookups too?
+        # "entry/{entry_name_or_id}"
+
+        url = f"{self.api_url}/{entry_id}"
+        print(f"⏳ Fetching Zelda Compendium entry ({entry_id})...")
+
+        try:
+            response = self._fetch_json(url)
+        except RuntimeError as e:
+             if "404" in str(e): # Handle not found
+                 raise RuntimeError(f"❌ Entry '{category}' not found.")
+             raise e
+
+        data = response.get("data", {})
+        image_url = data.get("image")
+
+        if not image_url:
+             raise RuntimeError("❌ No image found for this entry.")
+
+        name = data.get("name", "Unknown").title()
+        print(f"   Selected: {name}")
+
+        return self._download_bytes(image_url)
