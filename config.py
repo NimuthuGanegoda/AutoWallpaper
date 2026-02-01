@@ -54,6 +54,10 @@ from providers import (
     SpaceXProvider,
     DummyJsonProvider,
     RandomMetaProvider,
+    PokeApiProvider,
+    GhibliProvider,
+    DigimonProvider,
+    ZeldaCompendiumProvider,
 )
 
 # Provider mapping
@@ -106,6 +110,10 @@ PROVIDERS = {
     "46": KitsuProvider(),
     "47": SpaceXProvider(),
     "48": DummyJsonProvider(),
+    "49": PokeApiProvider(),
+    "50": GhibliProvider(),
+    "51": DigimonProvider(),
+    "52": ZeldaCompendiumProvider(),
 }
 
 # Categories for each provider
@@ -455,6 +463,44 @@ CATEGORIES = {
         "Random",
         "Custom Text",
     ],
+    "PokeAPI": [
+        "Random",
+        "Pikachu",
+        "Charizard",
+        "Mewtwo",
+        "Eevee",
+        "Gengar",
+        "Lucario",
+        "Rayquaza",
+    ],
+    "Studio Ghibli": [
+        "Random",
+        "Spirited Away",
+        "My Neighbor Totoro",
+        "Princess Mononoke",
+        "Howl's Moving Castle",
+        "Kiki's Delivery Service",
+        "Ponyo",
+    ],
+    "Digimon": [
+        "Random",
+        "Agumon",
+        "Gabumon",
+        "Patamon",
+        "Gatomon",
+        "Greymon",
+        "Angemon",
+    ],
+    "Zelda (BOTW)": [
+        "Random",
+        "Master Sword",
+        "Hylian Shield",
+        "Bokoblin",
+        "Moblin",
+        "Lizalfos",
+        "Lynel",
+        "Guardian Stalker",
+    ],
     "🎲 Random Source": [
         "Random",
     ],
@@ -510,6 +556,10 @@ MOODS = {
     "Kitsu": [""],
     "SpaceX": [""],
     "DummyJSON": [""],
+    "PokeAPI": [""],
+    "Studio Ghibli": [""],
+    "Digimon": [""],
+    "Zelda (BOTW)": [""],
     "🎲 Random Source": [""],
 }
 
