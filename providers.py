@@ -2469,3 +2469,147 @@ class ZeldaCompendiumProvider(ImageProvider):
         print(f"   Selected: {name}")
 
         return self._download_bytes(image_url)
+
+class MinecraftSkinProvider(ImageProvider):
+    """Image provider for Minecraft Skins (Minotar)."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://minotar.net/armor/body"
+        self.width = 1920
+        self.famous_players = [
+            "Notch", "Jeb_", "Dream", "Technoblade", "Grian",
+            "MumboJumbo", "CaptainSparklez", "TommyInnit", "Philza",
+            "DanTDM", "Stampy", "LDShadowLady", "SethBling", "Etho"
+        ]
+
+    def get_name(self) -> str:
+        return "Minecraft Skins"
+
+    def get_description(self) -> str:
+        return "Minecraft Player Skins (Minotar)"
+
+    def set_resolution(self, resolution: str):
+        try:
+            if "x" in resolution:
+                parts = resolution.lower().split("x")
+                if len(parts) >= 1:
+                    self.width = int(parts[0])
+        except ValueError:
+            pass
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        user = category
+        if user.lower() == "random":
+             user = random.choice(self.famous_players)
+
+        url = f"{self.base_url}/{user}/{self.width}.png"
+        print(f"⏳ Downloading Minecraft skin for '{user}'...")
+
+        # Minotar returns 200 even for invalid users (steve skin), but that's fine.
+        return self._download_bytes(url)
+
+class YugiohProvider(ImageProvider):
+    """Image provider for Yu-Gi-Oh! Cards."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://db.ygoprodeck.com/api/v7"
+
+    def get_name(self) -> str:
+        return "Yu-Gi-Oh!"
+
+    def get_description(self) -> str:
+        return "Yu-Gi-Oh! Card Art"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        if category and category.lower() != "random":
+            # Search
+            url = f"{self.api_url}/cardinfo.php"
+            params = {"fname": category}
+            print(f"⏳ Searching Yu-Gi-Oh! for '{category}'...")
+
+            data = self._fetch_json(url, params=params)
+            data = data.get("data", [])
+            if not data:
+                raise RuntimeError(f"❌ No cards found for '{category}'.")
+
+            card = random.choice(data)
+        else:
+            # Random
+            url = f"{self.api_url}/randomcard.php"
+            print(f"⏳ Fetching random Yu-Gi-Oh! card...")
+            data = self._fetch_json(url)
+
+            if isinstance(data, dict) and "data" in data:
+                 card = data["data"][0]
+            elif isinstance(data, list):
+                 card = data[0]
+            else:
+                 card = data
+
+        images = card.get("card_images", [])
+        if not images:
+             raise RuntimeError("❌ No images found for this card.")
+
+        image_url = images[0].get("image_url")
+        name = card.get("name", "Unknown")
+        print(f"   Selected: {name}")
+
+        return self._download_bytes(image_url)
+
+class iTunesArtworkProvider(ImageProvider):
+    """Image provider for iTunes Artwork (High Res)."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://itunes.apple.com/search"
+        self.random_terms = [
+            "Rock", "Pop", "Jazz", "Classical", "Metal", "Hip Hop",
+            "Taylor Swift", "Beatles", "Queen", "Drake", "Coldplay",
+            "Movie", "Action", "Comedy", "Thriller", "Sci-Fi"
+        ]
+
+    def get_name(self) -> str:
+        return "iTunes Artwork"
+
+    def get_description(self) -> str:
+        return "Album & Movie Artwork (High Res)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        term = category
+        if term.lower() == "random":
+             term = random.choice(self.random_terms)
+
+        params = {
+            "term": term,
+            "media": "all",
+            "limit": 50
+        }
+
+        print(f"⏳ Searching iTunes for '{term}'...")
+        data = self._fetch_json(self.api_url, params=params)
+
+        results = data.get("results", [])
+        if not results:
+             raise RuntimeError(f"❌ No results found for '{term}'.")
+
+        valid_results = [r for r in results if r.get("artworkUrl100")]
+
+        if not valid_results:
+             raise RuntimeError(f"❌ No artwork found for '{term}'.")
+
+        chosen = random.choice(valid_results)
+
+        art_url = chosen["artworkUrl100"]
+        # Hack for high res
+        image_url = art_url.replace("100x100bb", "10000x10000bb")
+
+        title = chosen.get("trackName") or chosen.get("collectionName", "Unknown")
+        artist = chosen.get("artistName", "")
+        if artist:
+            title = f"{title} by {artist}"
+
+        print(f"   Selected: {title}")
+
+        return self._download_bytes(image_url)
