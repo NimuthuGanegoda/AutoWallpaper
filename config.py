@@ -58,6 +58,9 @@ from providers import (
     GhibliProvider,
     DigimonProvider,
     ZeldaCompendiumProvider,
+    MinecraftSkinProvider,
+    YugiohProvider,
+    iTunesArtworkProvider,
 )
 
 # Provider mapping
@@ -114,6 +117,9 @@ PROVIDERS = {
     "50": GhibliProvider(),
     "51": DigimonProvider(),
     "52": ZeldaCompendiumProvider(),
+    "53": MinecraftSkinProvider(),
+    "54": YugiohProvider(),
+    "55": iTunesArtworkProvider(),
 }
 
 # Categories for each provider
@@ -501,6 +507,32 @@ CATEGORIES = {
         "Lynel",
         "Guardian Stalker",
     ],
+    "Minecraft Skins": [
+        "Random",
+        "Notch",
+        "Dream",
+        "Technoblade",
+        "Jeb_",
+        "Steve",
+        "Alex",
+    ],
+    "Yu-Gi-Oh!": [
+        "Random",
+        "Dark Magician",
+        "Blue-Eyes White Dragon",
+        "Exodia",
+        "Kuriboh",
+        "Slifer the Sky Dragon",
+    ],
+    "iTunes Artwork": [
+        "Random",
+        "Taylor Swift",
+        "The Beatles",
+        "Pink Floyd",
+        "Star Wars",
+        "Harry Potter",
+        "Inception",
+    ],
     "🎲 Random Source": [
         "Random",
     ],
@@ -560,6 +592,9 @@ MOODS = {
     "Studio Ghibli": [""],
     "Digimon": [""],
     "Zelda (BOTW)": [""],
+    "Minecraft Skins": [""],
+    "Yu-Gi-Oh!": [""],
+    "iTunes Artwork": [""],
     "🎲 Random Source": [""],
 }
 
