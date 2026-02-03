@@ -61,6 +61,10 @@ from providers import (
     MinecraftSkinProvider,
     YugiohProvider,
     iTunesArtworkProvider,
+    CountryFlagsProvider,
+    AmiiboApiProvider,
+    CoinCapProvider,
+    DiceBearProvider,
 )
 
 # Provider mapping
@@ -120,6 +124,10 @@ PROVIDERS = {
     "53": MinecraftSkinProvider(),
     "54": YugiohProvider(),
     "55": iTunesArtworkProvider(),
+    "56": CountryFlagsProvider(),
+    "57": AmiiboApiProvider(),
+    "58": CoinCapProvider(),
+    "59": DiceBearProvider(),
 }
 
 # Categories for each provider
@@ -533,6 +541,44 @@ CATEGORIES = {
         "Harry Potter",
         "Inception",
     ],
+    "Country Flags": [
+        "Random",
+        "US",
+        "GB",
+        "JP",
+        "DE",
+        "FR",
+        "CA",
+        "AU",
+        "BR",
+    ],
+    "Amiibo API": [
+        "Random",
+        "Mario",
+        "Zelda",
+        "Link",
+        "Pikachu",
+        "Kirby",
+        "Samus",
+        "Donkey Kong",
+    ],
+    "CoinCap (Crypto)": [
+        "Random",
+        "BTC",
+        "ETH",
+        "DOGE",
+        "XRP",
+        "SOL",
+        "ADA",
+    ],
+    "DiceBear Avatars": [
+        "Random",
+        "adventurer",
+        "avataaars",
+        "bottts",
+        "lorelei",
+        "pixel-art",
+    ],
     "🎲 Random Source": [
         "Random",
     ],
@@ -595,6 +641,10 @@ MOODS = {
     "Minecraft Skins": [""],
     "Yu-Gi-Oh!": [""],
     "iTunes Artwork": [""],
+    "Country Flags": [""],
+    "Amiibo API": [""],
+    "CoinCap (Crypto)": [""],
+    "DiceBear Avatars": [""],
     "🎲 Random Source": [""],
 }
 
