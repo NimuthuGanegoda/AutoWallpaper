@@ -787,6 +787,151 @@ class WikimediaCommonsProvider(ImageProvider):
         return self._download_bytes(image_url)
 
 
+class CountryFlagsProvider(ImageProvider):
+    """Image provider for Country Flags (FlagCDN)."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://flagcdn.com/w2560"
+        self.codes = [
+            "us", "gb", "ca", "au", "jp", "de", "fr", "it", "es", "br",
+            "in", "cn", "ru", "za", "kr", "mx", "id", "tr", "sa", "ar"
+        ]
+
+    def get_name(self) -> str:
+        return "Country Flags"
+
+    def get_description(self) -> str:
+        return "High quality country flags"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        code = category.lower()
+        if code == "random":
+            code = random.choice(self.codes)
+
+        # Simple mapping for common names if user types "usa" instead of "us"
+        mapping = {"usa": "us", "uk": "gb", "japan": "jp", "germany": "de", "france": "fr"}
+        code = mapping.get(code, code)
+
+        url = f"{self.base_url}/{code}.png"
+        print(f"⏳ Downloading flag for '{code}'...")
+
+        # FlagCDN returns 404 for invalid codes.
+        try:
+             # We can't use _fetch_json because it's an image.
+             # _download_bytes handles the get.
+             # But if it fails, we want a nice message.
+             # _download_bytes raises RuntimeError on failure.
+             return self._download_bytes(url)
+        except RuntimeError:
+             raise RuntimeError(f"❌ Flag not found for code '{code}'. Try 2-letter ISO code.")
+
+
+class AmiiboApiProvider(ImageProvider):
+    """Image provider for Nintendo Amiibo."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://www.amiiboapi.com/api/amiibo/"
+
+    def get_name(self) -> str:
+        return "Amiibo API"
+
+    def get_description(self) -> str:
+        return "Nintendo Amiibo Figures"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        params = {}
+        if category and category.lower() != "random":
+             params["name"] = category
+
+        print(f"⏳ Fetching Amiibo ({category})...")
+        data = self._fetch_json(self.api_url, params=params)
+
+        amiibo_list = data.get("amiibo", [])
+        if not amiibo_list:
+             # Try character search if name search failed?
+             # The API has "name", "character", "gameSeries", etc.
+             # "name" is usually the figure name.
+             raise RuntimeError(f"❌ No Amiibo found for '{category}'.")
+
+        # Pick random if multiple
+        chosen = random.choice(amiibo_list)
+        image_url = chosen.get("image")
+        name = chosen.get("name", "Unknown")
+        series = chosen.get("gameSeries", "")
+
+        print(f"   Selected: {name} ({series})")
+
+        if not image_url:
+            raise RuntimeError("❌ No image URL found.")
+
+        return self._download_bytes(image_url)
+
+
+class CoinCapProvider(ImageProvider):
+    """Image provider for Crypto Logos (CoinCap)."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://assets.coincap.io/assets/icons"
+        self.common_coins = [
+            "BTC", "ETH", "USDT", "BNB", "XRP", "USDC", "SOL", "ADA", "DOGE", "TRX"
+        ]
+
+    def get_name(self) -> str:
+        return "CoinCap (Crypto)"
+
+    def get_description(self) -> str:
+        return "Cryptocurrency Logos"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        symbol = category.upper()
+        if category.lower() == "random":
+             symbol = random.choice(self.common_coins)
+
+        url = f"{self.base_url}/{symbol.lower()}@2x.png"
+        print(f"⏳ Downloading logo for '{symbol}'...")
+
+        try:
+             return self._download_bytes(url)
+        except RuntimeError:
+             raise RuntimeError(f"❌ Logo not found for '{symbol}'.")
+
+
+class DiceBearProvider(ImageProvider):
+    """Image provider for DiceBear Avatars."""
+
+    def __init__(self):
+        super().__init__()
+        self.base_url = "https://api.dicebear.com/7.x"
+        self.styles = [
+            "adventurer", "avataaars", "bottts", "fun-emoji", "lorelei",
+            "notionists", "pixel-art", "thumbs"
+        ]
+
+    def get_name(self) -> str:
+        return "DiceBear Avatars"
+
+    def get_description(self) -> str:
+        return "Generated Avatars (DiceBear)"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Category can be style
+        style = category.lower()
+        seed = str(random.randint(0, 999999))
+
+        if style == "random" or style not in self.styles:
+            if style != "random":
+                seed = style # Use category as seed if it's not a known style
+            style = random.choice(self.styles)
+
+        url = f"{self.base_url}/{style}/png?seed={seed}&size=1024"
+        print(f"⏳ Generating avatar ({style}, seed={seed})...")
+
+        return self._download_bytes(url)
+
+
 class LoremFlickrProvider(ImageProvider):
     """Image provider for Lorem Flickr."""
 
