@@ -2758,3 +2758,202 @@ class iTunesArtworkProvider(ImageProvider):
         print(f"   Selected: {title}")
 
         return self._download_bytes(image_url)
+
+class WikipediaProvider(ImageProvider):
+    """Image provider for Wikipedia."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://en.wikipedia.org/w/api.php"
+        # Wikipedia requires a User-Agent
+        self.session.headers.update({
+            "User-Agent": "EasyWallpaper/1.0 (mailto:test@example.com)"
+        })
+
+    def get_name(self) -> str:
+        return "Wikipedia"
+
+    def get_description(self) -> str:
+        return "Encyclopedic images from Wikipedia"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        params = {
+            "action": "query",
+            "format": "json",
+            "prop": "pageimages",
+            "piprop": "original"
+        }
+
+        if category.lower() == "random":
+            params["generator"] = "random"
+            params["grnnamespace"] = 0
+            params["grnlimit"] = 10
+            print("⏳ Fetching random pages from Wikipedia...")
+        else:
+            params["titles"] = category
+            print(f"⏳ Searching Wikipedia for '{category}'...")
+
+        try:
+            data = self._fetch_json(self.api_url, params=params)
+        except RuntimeError as e:
+            if "JSON" in str(e):
+                # Sometimes Wiki returns HTML error pages if overloaded
+                raise RuntimeError("❌ Wikipedia API error (Check your connection or try again).")
+            raise e
+
+        pages = data.get("query", {}).get("pages", {})
+        if not pages:
+             raise RuntimeError(f"❌ No results found for '{category}'.")
+
+        # Find a page with an original image
+        valid_pages = []
+        for pid, page in pages.items():
+            if "original" in page:
+                 source = page["original"]["source"]
+                 # Filter common non-wallpaper extensions (e.g. .pdf, .svg, .tif)
+                 # We prefer .jpg, .png
+                 if source.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                     valid_pages.append(page)
+
+        if not valid_pages:
+             if category.lower() == "random":
+                  # Try again? Recursion limited to 1
+                  # Or just raise
+                  raise RuntimeError("❌ No valid images found in random selection.")
+             else:
+                  raise RuntimeError(f"❌ No images found for '{category}'.")
+
+        chosen = random.choice(valid_pages)
+        image_url = chosen["original"]["source"]
+        title = chosen.get("title", "Unknown")
+        print(f"   Selected: {title}")
+
+        return self._download_bytes(image_url)
+
+
+class LibraryOfCongressProvider(ImageProvider):
+    """Image provider for Library of Congress."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://www.loc.gov/photos/"
+
+    def get_name(self) -> str:
+        return "Library of Congress"
+
+    def get_description(self) -> str:
+        return "Historical prints and photos"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Search with random pagination
+        # Page 1 to 5 usually covers best results for broad terms
+        page = random.randint(1, 5)
+
+        params = {
+            "q": category if category.lower() != "random" else "history",
+            "fo": "json",
+            "c": 20, # count
+            "sp": page # page number
+        }
+
+        print(f"⏳ Searching Library of Congress ({params['q']}, page {page})...")
+        try:
+             # LoC API sometimes is slow
+             data = self._fetch_json(self.api_url, params=params)
+        except RuntimeError:
+             # Fallback to page 1 if random page fails (e.g. out of range)
+             if page != 1:
+                 print("   Page empty, trying page 1...")
+                 params["sp"] = 1
+                 data = self._fetch_json(self.api_url, params=params)
+             else:
+                 raise
+
+        results = data.get("results", [])
+        if not results:
+             raise RuntimeError(f"❌ No results found for '{category}'.")
+
+        # Filter for valid images
+        valid_images = []
+        for item in results:
+            if "image_url" in item and item["image_url"]:
+                # image_url is a list of URLs, ascending in size usually.
+                # We want the largest available.
+                # Sometimes the last one is a .tif which we can't display easily?
+                # Usually they are .jpg or .gif
+                # Let's check the last one.
+                urls = item["image_url"]
+                if not urls: continue
+
+                # Prefer the largest jpg
+                best_url = None
+                for u in reversed(urls):
+                    if u.lower().endswith(".jpg") or u.lower().endswith(".jpeg") or u.lower().endswith(".png"):
+                        best_url = u
+                        break
+
+                if best_url:
+                    valid_images.append((best_url, item.get("title", "Unknown")))
+
+        if not valid_images:
+             raise RuntimeError(f"❌ No valid images found for '{category}'.")
+
+        image_url, title = random.choice(valid_images)
+        print(f"   Selected: {title}")
+
+        return self._download_bytes(image_url)
+
+
+class FlickrProvider(ImageProvider):
+    """Image provider for Flickr Public Feed."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://www.flickr.com/services/feeds/photos_public.gne"
+
+    def get_name(self) -> str:
+        return "Flickr"
+
+    def get_description(self) -> str:
+        return "Public photos from Flickr"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        tags = category
+        if category.lower() == "random":
+            # Just pick a random common tag
+            tags = random.choice(["nature", "city", "travel", "architecture", "street", "art", "night", "landscape"])
+
+        if mood:
+            tags = f"{tags},{mood}"
+
+        params = {
+            "format": "json",
+            "tags": tags,
+            "nojsoncallback": 1,
+            "lang": "en-us"
+        }
+
+        print(f"⏳ Searching Flickr ({tags})...")
+        data = self._fetch_json(self.api_url, params=params)
+
+        items = data.get("items", [])
+        if not items:
+             raise RuntimeError(f"❌ No photos found for '{tags}' on Flickr.")
+
+        item = random.choice(items)
+        media = item.get("media", {})
+        # Flickr feed returns 'm' size (small). We hack the URL to get 'b' (large) or 'h' (huge).
+        image_url = media.get("m")
+
+        if not image_url:
+             raise RuntimeError("❌ No image URL found.")
+
+        # Try to upgrade resolution
+        # Suffixes: _m.jpg -> _b.jpg (1024)
+        if "_m." in image_url:
+            image_url = image_url.replace("_m.", "_b.")
+
+        title = item.get("title", "Unknown")
+        print(f"   Selected: {title}")
+
+        return self._download_bytes(image_url)
