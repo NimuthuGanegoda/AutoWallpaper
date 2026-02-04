@@ -65,6 +65,9 @@ from providers import (
     AmiiboApiProvider,
     CoinCapProvider,
     DiceBearProvider,
+    WikipediaProvider,
+    LibraryOfCongressProvider,
+    FlickrProvider,
 )
 
 # Provider mapping
@@ -128,6 +131,9 @@ PROVIDERS = {
     "57": AmiiboApiProvider(),
     "58": CoinCapProvider(),
     "59": DiceBearProvider(),
+    "60": WikipediaProvider(),
+    "61": LibraryOfCongressProvider(),
+    "62": FlickrProvider(),
 }
 
 # Categories for each provider
@@ -579,6 +585,32 @@ CATEGORIES = {
         "lorelei",
         "pixel-art",
     ],
+    "Wikipedia": [
+        "Random",
+        "History",
+        "Science",
+        "Art",
+        "Space",
+        "Nature",
+    ],
+    "Library of Congress": [
+        "Random",
+        "Civil War",
+        "Architecture",
+        "Maps",
+        "Portraits",
+        "Baseball",
+    ],
+    "Flickr": [
+        "Random",
+        "Nature",
+        "City",
+        "Architecture",
+        "Travel",
+        "Animals",
+        "Street",
+        "Night",
+    ],
     "🎲 Random Source": [
         "Random",
     ],
@@ -645,6 +677,9 @@ MOODS = {
     "Amiibo API": [""],
     "CoinCap (Crypto)": [""],
     "DiceBear Avatars": [""],
+    "Wikipedia": [""],
+    "Library of Congress": [""],
+    "Flickr": ["blackandwhite", "colorful", "minimal"],
     "🎲 Random Source": [""],
 }
 
