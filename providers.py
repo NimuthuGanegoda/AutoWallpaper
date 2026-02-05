@@ -18,6 +18,7 @@ import requests
 import re
 import random
 import math
+from PIL import Image, ImageDraw
 import concurrent.futures
 import xml.etree.ElementTree as ET
 
@@ -2957,3 +2958,275 @@ class FlickrProvider(ImageProvider):
         print(f"   Selected: {title}")
 
         return self._download_bytes(image_url)
+
+class SuperheroProvider(ImageProvider):
+    """Image provider for Superhero API."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://akabab.github.io/superhero-api/api/all.json"
+        self._cache = None
+
+    def get_name(self) -> str:
+        return "Superhero API"
+
+    def get_description(self) -> str:
+        return "Superheroes and Villains"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Fetch all heroes
+        if not self._cache:
+            print(f"⏳ Fetching superhero data...")
+            self._cache = self._fetch_json(self.api_url)
+
+        data = self._cache
+
+        if not data:
+            raise RuntimeError("❌ No data returned from Superhero API.")
+
+        if category and category.lower() != "random":
+            # Search by name (partial match)
+            filtered = [h for h in data if category.lower() in h.get("name", "").lower()]
+            if filtered:
+                data = filtered
+            else:
+                print(f"   No match for '{category}', picking random...")
+
+        hero = random.choice(data)
+
+        images = hero.get("images", {})
+        # Prefer lg (large)
+        image_url = images.get("lg") or images.get("md") or images.get("sm")
+
+        if not image_url:
+             raise RuntimeError("❌ No image URL found.")
+
+        name = hero.get("name", "Unknown")
+        print(f"   Selected: {name}")
+
+        return self._download_bytes(image_url)
+
+class Dota2Provider(ImageProvider):
+    """Image provider for Dota 2."""
+
+    def __init__(self):
+        super().__init__()
+        self.api_url = "https://api.opendota.com/api/heroStats"
+        self.cdn_url = "https://cdn.cloudflare.steamstatic.com"
+        self._cache = None
+
+    def get_name(self) -> str:
+        return "Dota 2"
+
+    def get_description(self) -> str:
+        return "Dota 2 Hero Artwork"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        if not self._cache:
+            print(f"⏳ Fetching Dota 2 heroes...")
+            self._cache = self._fetch_json(self.api_url)
+
+        data = self._cache
+
+        if not data:
+            raise RuntimeError("❌ No data returned from OpenDota API.")
+
+        if category and category.lower() != "random":
+            # Search by localized_name
+            filtered = [h for h in data if category.lower() in h.get("localized_name", "").lower()]
+            if filtered:
+                data = filtered
+            else:
+                print(f"   No match for '{category}', picking random...")
+
+        hero = random.choice(data)
+
+        # img field example: /apps/dota2/images/dota_react/heroes/antimage.png?
+        img_path = hero.get("img")
+        if not img_path:
+             raise RuntimeError("❌ No image path found for this hero.")
+
+        # Remove trailing ? if present
+        if img_path.endswith("?"):
+            img_path = img_path[:-1]
+
+        image_url = f"{self.cdn_url}{img_path}"
+        name = hero.get("localized_name", "Unknown")
+        print(f"   Selected: {name}")
+
+        return self._download_bytes(image_url)
+
+class LeagueOfLegendsProvider(ImageProvider):
+    """Image provider for League of Legends."""
+
+    def __init__(self):
+        super().__init__()
+        self.version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
+        self.cdn_base = "https://ddragon.leagueoflegends.com/cdn"
+        self._cache = None
+        self._version = None
+
+    def get_name(self) -> str:
+        return "League of Legends"
+
+    def get_description(self) -> str:
+        return "LoL Champion Splash Art"
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        # Get latest version
+        if not self._version:
+            print(f"⏳ Fetching LoL version...")
+            versions = self._fetch_json(self.version_url)
+            if not versions:
+                raise RuntimeError("❌ Failed to fetch LoL versions.")
+            self._version = versions[0]
+
+        # Get champions
+        if not self._cache:
+            print(f"⏳ Fetching LoL champions (v{self._version})...")
+            # Url: https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion.json
+            data_url = f"{self.cdn_base}/{self._version}/data/en_US/champion.json"
+            data = self._fetch_json(data_url)
+            self._cache = data.get("data", {})
+
+        champs = self._cache
+        if not champs:
+             raise RuntimeError("❌ No champions found.")
+
+        # Filter
+        champ_keys = list(champs.keys())
+        if category and category.lower() != "random":
+             filtered = [k for k in champ_keys if category.lower() in k.lower() or category.lower() in champs[k]["name"].lower()]
+             if filtered:
+                 champ_keys = filtered
+             else:
+                 print(f"   No match for '{category}', picking random...")
+
+        chosen_key = random.choice(champ_keys)
+        champ = champs[chosen_key]
+        champ_id = champ["id"] # e.g. "Aatrox"
+        name = champ["name"]
+
+        # Splash URL: https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{id}_0.jpg
+        image_url = f"{self.cdn_base}/img/champion/splash/{champ_id}_0.jpg"
+        print(f"   Selected: {name}")
+
+        return self._download_bytes(image_url)
+
+class SolidColorProvider(ImageProvider):
+    """Image provider for Solid Colors."""
+
+    def __init__(self):
+        super().__init__()
+        self.width = 1920
+        self.height = 1080
+
+    def get_name(self) -> str:
+        return "Solid Color"
+
+    def get_description(self) -> str:
+        return "Simple Solid Color Wallpapers"
+
+    def set_resolution(self, resolution: str):
+        try:
+            if "x" in resolution:
+                parts = resolution.lower().split("x")
+                if len(parts) >= 2:
+                    self.width = int(parts[0])
+                    self.height = int(parts[1])
+        except ValueError:
+            pass
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        from io import BytesIO
+
+        color = category
+        if color.lower() == "random":
+             # Generate random hex
+             color = f"#{random.randint(0, 0xFFFFFF):06x}"
+
+        print(f"🎨 Generating solid color: {color} ({self.width}x{self.height})...")
+
+        try:
+            img = Image.new('RGB', (self.width, self.height), color)
+        except ValueError:
+             # Fallback to random if invalid
+             print(f"⚠️ Invalid color '{color}', using random.")
+             color = f"#{random.randint(0, 0xFFFFFF):06x}"
+             img = Image.new('RGB', (self.width, self.height), color)
+
+        bio = BytesIO()
+        img.save(bio, format='PNG')
+        return bio.getvalue()
+
+class GradientProvider(ImageProvider):
+    """Image provider for Gradients."""
+
+    def __init__(self):
+        super().__init__()
+        self.width = 1920
+        self.height = 1080
+
+    def get_name(self) -> str:
+        return "Gradient"
+
+    def get_description(self) -> str:
+        return "Smooth Gradient Wallpapers"
+
+    def set_resolution(self, resolution: str):
+        try:
+            if "x" in resolution:
+                parts = resolution.lower().split("x")
+                if len(parts) >= 2:
+                    self.width = int(parts[0])
+                    self.height = int(parts[1])
+        except ValueError:
+            pass
+
+    def _interpolate(self, start_color, end_color, factor: float):
+        return (
+            int(start_color[0] + (end_color[0] - start_color[0]) * factor),
+            int(start_color[1] + (end_color[1] - start_color[1]) * factor),
+            int(start_color[2] + (end_color[2] - start_color[2]) * factor),
+        )
+
+    def download_image(self, category: str, mood: str = "") -> bytes:
+        from io import BytesIO
+
+        # Define some presets
+        presets = {
+            "sunset": ((255, 94, 77), (255, 189, 57)),
+            "ocean": ((0, 198, 255), (0, 114, 255)),
+            "forest": ((19, 78, 94), (113, 178, 128)),
+            "plasma": ((253, 29, 29), (252, 176, 69)),
+            "dusk": ((44, 62, 80), (253, 116, 108)),
+            "sky": ((0, 176, 155), (150, 201, 61)),
+        }
+
+        c1 = (0, 0, 0)
+        c2 = (255, 255, 255)
+
+        if category.lower() in presets:
+            c1, c2 = presets[category.lower()]
+        elif category.lower() == "random":
+             c1 = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+             c2 = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        else:
+             c1 = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+             c2 = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
+        print(f"🎨 Generating gradient: {category} ({self.width}x{self.height})...")
+
+        # Create a 1xHeight gradient and resize it
+        gradient = Image.new('RGB', (1, self.height), color=0)
+        draw = ImageDraw.Draw(gradient)
+
+        for y in range(self.height):
+            r, g, b = self._interpolate(c1, c2, y / self.height)
+            draw.point((0, y), fill=(r, g, b))
+
+        img = gradient.resize((self.width, self.height))
+
+        bio = BytesIO()
+        img.save(bio, format='PNG')
+        return bio.getvalue()
