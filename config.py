@@ -68,6 +68,11 @@ from providers import (
     WikipediaProvider,
     LibraryOfCongressProvider,
     FlickrProvider,
+    SuperheroProvider,
+    Dota2Provider,
+    LeagueOfLegendsProvider,
+    SolidColorProvider,
+    GradientProvider,
 )
 
 # Provider mapping
@@ -134,6 +139,11 @@ PROVIDERS = {
     "60": WikipediaProvider(),
     "61": LibraryOfCongressProvider(),
     "62": FlickrProvider(),
+    "63": SuperheroProvider(),
+    "64": Dota2Provider(),
+    "65": LeagueOfLegendsProvider(),
+    "66": SolidColorProvider(),
+    "67": GradientProvider(),
 }
 
 # Categories for each provider
@@ -614,6 +624,52 @@ CATEGORIES = {
     "🎲 Random Source": [
         "Random",
     ],
+    "Superhero API": [
+        "Random",
+        "Batman",
+        "Superman",
+        "Spider-Man",
+        "Iron Man",
+        "Thor",
+        "Hulk",
+        "Wonder Woman",
+    ],
+    "Dota 2": [
+        "Random",
+        "Anti-Mage",
+        "Pudge",
+        "Invoker",
+        "Juggernaut",
+        "Crystal Maiden",
+        "Phantom Assassin",
+    ],
+    "League of Legends": [
+        "Random",
+        "Ahri",
+        "Yasuo",
+        "Lux",
+        "Jinx",
+        "Thresh",
+        "Teemo",
+    ],
+    "Solid Color": [
+        "Random",
+        "Red",
+        "Blue",
+        "Green",
+        "Black",
+        "White",
+        "#FF5733",
+    ],
+    "Gradient": [
+        "Random",
+        "Sunset",
+        "Ocean",
+        "Forest",
+        "Plasma",
+        "Dusk",
+        "Sky",
+    ],
 }
 
 # Moods for filtering
@@ -681,6 +737,11 @@ MOODS = {
     "Library of Congress": [""],
     "Flickr": ["blackandwhite", "colorful", "minimal"],
     "🎲 Random Source": [""],
+    "Superhero API": [""],
+    "Dota 2": [""],
+    "League of Legends": [""],
+    "Solid Color": [""],
+    "Gradient": [""],
 }
 
 # Initialize RandomMetaProvider with dependencies
