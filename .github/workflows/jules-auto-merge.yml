@@ -1,0 +1,25 @@
+name: Auto-merge Jules
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  approve-and-merge:
+    runs-on: ubuntu-latest
+    # I REMOVED THE 'if:' LINE BELOW. NOW IT RUNS ON EVERYTHING.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Auto-merge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr ready "$PR_URL" || true
+          gh pr merge "$PR_URL" --squash --delete-branch
