@@ -1,6 +1,8 @@
 import streamlit as st
 import os
 import sys
+from config import PROVIDERS, CATEGORIES, MOODS, RESOLUTIONS
+import wallpaper
 
 # Check if running in a browser environment (Pyodide)
 IS_WEB = "pyodide" in sys.modules
@@ -11,9 +13,6 @@ if IS_WEB:
         pyodide_http.patch_all()
     except ImportError:
         pass
-
-from config import PROVIDERS, CATEGORIES, MOODS, RESOLUTIONS
-import wallpaper
 
 st.set_page_config(page_title="Easy Wallpaper", page_icon="🖼️", layout="wide")
 
